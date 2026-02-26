@@ -1,0 +1,34 @@
+name: goon_tracker
+description: "A new Flutter project."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  cupertino_icons: any
+  flutter_riverpod: any
+  go_router: any
+  dio: any
+  isar: any
+  isar_flutter_libs: any
+  path_provider: any
+  fl_chart: any
+  cached_network_image: any
+  intl: any
+  local_auth: any
+  shimmer: any
+  google_fonts: any
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: any
+  build_runner: any
+  isar_generator: any
+
+flutter:
+  uses-material-design: true
