@@ -29,36 +29,37 @@ class SearchState {
   }
 }
 
-class SearchNotifier extends AutoDisposeAsyncNotifier<List<TrackableContent>> {
+class SearchNotifier extends AutoDisposeFamilyAsyncNotifier<List<TrackableContent>, SearchType> {
   Timer? _debounceTimer;
 
   @override
-  FutureOr<List<TrackableContent>> build() async {
-    return await fetchTrending(SearchType.anime, false);
+  FutureOr<List<TrackableContent>> build(SearchType arg) async {
+    final searchState = ref.watch(searchStateProvider);
+    return await fetchTrending(arg, searchState.isAdult);
   }
 
-  void onQueryChanged(String query, SearchType type, bool isAdult) {
+  void onQueryChanged(String query) {
     _debounceTimer?.cancel();
+    final searchState = ref.read(searchStateProvider);
+    
     if (query.isEmpty) {
-      search('', type, isAdult);
+      search('', searchState.isAdult);
       return;
     }
+    
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
-      search(query, type, isAdult);
+      search(query, searchState.isAdult);
     });
   }
 
-  Future<void> search(String query, SearchType type, bool isAdult) async {
-    if (query.isEmpty) {
-      state = const AsyncValue.loading();
-      state = await AsyncValue.guard(() => fetchTrending(type, isAdult));
-      return;
-    }
-
+  Future<void> search(String query, bool isAdult) async {
     state = const AsyncValue.loading();
     state = await AsyncValue.guard(() async {
       final repository = ref.read(searchRepositoryProvider);
-      if (type == SearchType.anime) {
+      if (query.isEmpty) {
+        return await fetchTrending(arg, isAdult);
+      }
+      if (arg == SearchType.anime) {
         return await repository.searchAnime(query, isAdult: isAdult);
       } else {
         return await repository.searchManga(query, isAdult: isAdult);
@@ -76,8 +77,8 @@ class SearchNotifier extends AutoDisposeAsyncNotifier<List<TrackableContent>> {
   }
 }
 
-final searchNotifierProvider =
-    AsyncNotifierProvider.autoDispose<SearchNotifier, List<TrackableContent>>(
+final searchResultsProvider =
+    AsyncNotifierProvider.autoDispose.family<SearchNotifier, List<TrackableContent>, SearchType>(
         SearchNotifier.new);
 
 final searchStateProvider = StateProvider<SearchState>((ref) => SearchState());

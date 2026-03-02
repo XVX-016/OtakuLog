@@ -48,3 +48,12 @@ final trendingMangaProvider = FutureProvider<List<TrackableContent>>((ref) {
   return ref.watch(searchRepositoryProvider).getTrendingManga();
 });
 
+final userRepositoryProvider = Provider<UserRepository>((ref) {
+  return UserRepositoryImpl(ref.watch(isarProvider));
+});
+
+final currentUserProvider = FutureProvider<UserEntity?>((ref) {
+  return ref.watch(userRepositoryProvider).getUser();
+});
+
+

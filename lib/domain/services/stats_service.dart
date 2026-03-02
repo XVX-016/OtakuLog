@@ -88,4 +88,13 @@ class StatsService {
 
     return streak;
   }
+  double calculateAverageMinutesPerUnit(List<UserSessionEntity> sessions, SessionContentType type) {
+    final typeSessions = sessions.where((s) => s.contentType == type).toList();
+    if (typeSessions.isEmpty) return 0.0;
+
+    final totalMinutes = typeSessions.fold(0, (sum, s) => sum + s.totalMinutes);
+    final totalUnits = typeSessions.fold(0, (sum, s) => sum + s.unitsConsumed);
+
+    return totalUnits > 0 ? totalMinutes / totalUnits : 0.0;
+  }
 }

@@ -4,6 +4,7 @@ import 'package:goon_tracker/app/theme.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
 import 'package:goon_tracker/app/providers.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class AnimeDetailScreen extends ConsumerWidget {
   final AnimeEntity anime;

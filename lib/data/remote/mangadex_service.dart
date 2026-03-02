@@ -48,6 +48,23 @@ class MangadexService {
     }
   }
 
+  Future<int> fetchChapterCount(String mangaId) async {
+    if (_chapterCountCache.containsKey(mangaId)) {
+      return _chapterCountCache[mangaId]!;
+    }
+    try {
+      final response = await _dio.get('/manga/$mangaId/feed', queryParameters: {
+        'limit': 1,
+        'offset': 0,
+      });
+      final total = response.data['total'] ?? 0;
+      _chapterCountCache[mangaId] = total;
+      return total;
+    } catch (e) {
+      return 0;
+    }
+  }
+
   Future<MangaEntity> fetchMangaDetails(String id) async {
     final response = await _dio.get('/manga/$id', queryParameters: {
       'includes[]': ['cover_art', 'author', 'artist'],
@@ -56,36 +73,6 @@ class MangadexService {
   }
 
   MangaEntity _mapToEntity(Map<String, dynamic> m) {
-    final attrs = m['attributes'];
-    final relationships = m['relationships'] as List;
-    
-    String coverFileName = '';
-    final coverRel = relationships.firstWhere((r) => r['type'] == 'cover_art', orElse: () => null);
-    if (coverRel != null && coverRel['attributes'] != null) {
-       coverFileName = coverRel['attributes']['fileName'] ?? '';
-    }
-
-    final coverUrl = coverFileName.isNotEmpty 
-      ? 'https://uploads.mangadex.org/covers/${m['id']}/$coverFileName'
-      : '';
-
-    final genres = (attrs['tags'] as List? ?? [])
-        .map((tag) => tag['attributes']['name']['en'] as String)
-        .toList();
-
-    return MangaEntity(
-      id: m['id'],
-      title: attrs['title']['en'] ?? attrs['title'].values.first ?? 'Unknown',
-      coverImage: coverUrl,
-      totalChapters: attrs['lastChapter'] != null ? int.tryParse(attrs['lastChapter']) ?? 0 : 0,
-      currentChapter: 0,
-      status: MangaStatus.reading,
-      rating: null,
-      genres: genres,
-      description: attrs['description']['en'],
-      isAdult: attrs['contentRating'] == 'erotica' || attrs['contentRating'] == 'pornographic',
-      createdAt: DateTime.parse(attrs['createdAt']),
-      updatedAt: DateTime.parse(attrs['updatedAt']),
-    );
+    return MangaMapper.fromJson(m);
   }
 }

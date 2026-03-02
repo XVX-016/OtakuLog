@@ -2,6 +2,44 @@ import 'package:goon_tracker/data/models/anime_model.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 
 class AnimeMapper {
+  static AnimeEntity fromJson(Map<String, dynamic> json) {
+    final titleData = json['title'] as Map? ?? {};
+    final resolvedTitle = titleData['english'] ?? titleData['romaji'] ?? titleData['native'] ?? 'Unknown';
+
+    final coverImage = json['coverImage'] as Map? ?? {};
+    final largeCover = coverImage['large'] ?? '';
+
+    final genres = List<String>.from(json['genres'] ?? []);
+    
+    // Defensive numeric parsing
+    final averageScore = json['averageScore'];
+    double? rating;
+    if (averageScore != null) {
+      if (averageScore is num) {
+        rating = averageScore.toDouble() / 10.0;
+      }
+    }
+
+    final updatedAtTimestamp = json['updatedAt'] as int? ?? 0;
+    final updatedAt = updatedAtTimestamp > 0
+        ? DateTime.fromMillisecondsSinceEpoch(updatedAtTimestamp * 1000)
+        : DateTime.now();
+
+    return AnimeEntity(
+      id: (json['id'] ?? '').toString(),
+      title: resolvedTitle,
+      coverImage: largeCover,
+      totalEpisodes: json['episodes'] ?? 0,
+      currentEpisode: 0,
+      status: AnimeStatus.watching,
+      rating: rating,
+      genres: genres,
+      description: json['description'],
+      createdAt: DateTime.now(),
+      updatedAt: updatedAt,
+    );
+  }
+
   static AnimeEntity toEntity(AnimeModel model) {
     return AnimeEntity(
       id: model.remoteId,
@@ -9,7 +47,7 @@ class AnimeMapper {
       coverImage: model.coverImage,
       totalEpisodes: model.totalEpisodes,
       currentEpisode: model.currentEpisode,
-      status: _mapStatusToEntity(model.status),
+      status: _mapStatusFromModel(model.status),
       rating: model.rating,
       genres: model.genres,
       description: model.description,
@@ -33,8 +71,8 @@ class AnimeMapper {
       ..updatedAt = entity.updatedAt;
   }
 
-  static AnimeStatus _mapStatusToEntity(AnimeStatusModel modelStatus) {
-    switch (modelStatus) {
+  static AnimeStatus _mapStatusFromModel(AnimeStatusModel model) {
+    switch (model) {
       case AnimeStatusModel.watching:
         return AnimeStatus.watching;
       case AnimeStatusModel.completed:
@@ -46,8 +84,8 @@ class AnimeMapper {
     }
   }
 
-  static AnimeStatusModel _mapStatusToModel(AnimeStatus entityStatus) {
-    switch (entityStatus) {
+  static AnimeStatusModel _mapStatusToModel(AnimeStatus status) {
+    switch (status) {
       case AnimeStatus.watching:
         return AnimeStatusModel.watching;
       case AnimeStatus.completed:

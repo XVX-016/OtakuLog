@@ -3,7 +3,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:goon_tracker/data/models/anime_model.dart';
 import 'package:goon_tracker/data/models/manga_model.dart';
 import 'package:goon_tracker/data/models/user_session_model.dart';
-import 'package:goon_tracker/data/models/daily_activity.dart'; // Will be created next
+import 'package:goon_tracker/data/models/user_model.dart';
+import 'package:goon_tracker/data/models/daily_activity.dart';
 
 class IsarService {
   static late Isar _isar;
@@ -16,6 +17,7 @@ class IsarService {
       [
         AnimeModelSchema,
         MangaModelSchema,
+        UserModelSchema,
         DailyActivitySchema,
         UserSessionModelSchema,
       ],

@@ -4,6 +4,7 @@ import 'package:goon_tracker/app/theme.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
 import 'package:goon_tracker/app/providers.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class MangaDetailScreen extends ConsumerWidget {
   final MangaEntity manga;

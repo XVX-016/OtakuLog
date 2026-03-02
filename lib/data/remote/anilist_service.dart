@@ -72,21 +72,6 @@ class AnilistService {
   }
 
   AnimeEntity _mapToEntity(Map<String, dynamic> m) {
-    final titleData = m['title'];
-    final resolvedTitle = titleData['english'] ?? titleData['romaji'] ?? titleData['native'] ?? 'Unknown';
-
-    return AnimeEntity(
-      id: m['id'].toString(),
-      title: resolvedTitle,
-      coverImage: m['coverImage']['large'],
-      totalEpisodes: m['episodes'] ?? 0,
-      currentEpisode: 0,
-      status: AnimeStatus.watching,
-      rating: m['averageScore'] != null ? m['averageScore'].toDouble() / 10.0 : null,
-      genres: List<String>.from(m['genres'] ?? []),
-      description: m['description'],
-      createdAt: DateTime.now(),
-      updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updatedAt'] ?? 0) * 1000),
-    );
+    return AnimeMapper.fromJson(m);
   }
 }

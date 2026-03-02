@@ -6,14 +6,39 @@ import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/app/providers.dart';
 
-class ContentPreviewSheet extends ConsumerWidget {
+class ContentPreviewSheet extends ConsumerStatefulWidget {
   final TrackableContent content;
 
   const ContentPreviewSheet({super.key, required this.content});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isAnime = content is AnimeEntity;
+  ConsumerState<ContentPreviewSheet> createState() => _ContentPreviewSheetState();
+}
+
+class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
+  int? _totalChapters;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.content is MangaEntity) {
+      _fetchChapters();
+    }
+  }
+
+  Future<void> _fetchChapters() async {
+    final count = await ref.read(mangadexServiceProvider).fetchChapterCount(widget.content.id);
+    if (mounted) {
+      setState(() {
+        _totalChapters = count;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isAnime = widget.content is AnimeEntity;
+    final totalProgress = isAnime ? widget.content.totalProgress : (_totalChapters ?? widget.content.totalProgress);
     
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
@@ -42,12 +67,17 @@ class ContentPreviewSheet extends ConsumerWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    content.coverImage,
+                  child: CachedNetworkImage(
+                    imageUrl: widget.content.coverImage,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: AppTheme.elevated,
+                      highlightColor: AppTheme.surface,
+                      child: Container(color: Colors.white),
+                    ),
+                    errorWidget: (context, url, error) => Container(
                       color: AppTheme.elevated,
-                      child: const Icon(Icons.image_not_supported, color: AppTheme.secondaryText),
+                      child: const Icon(Icons.broken_image, color: AppTheme.secondaryText),
                     ),
                   ),
                 ),
@@ -55,7 +85,7 @@ class ContentPreviewSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 24),
             Text(
-              content.title,
+              widget.content.title,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                     fontWeight: FontWeight.bold,
                     color: AppTheme.primaryText,
@@ -63,15 +93,15 @@ class ContentPreviewSheet extends ConsumerWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              isAnime ? 'Anime • ${content.totalProgress} Episodes' : 'Manga • ${content.totalProgress > 0 ? '${content.totalProgress} Chapters' : 'Ongoing'}',
+              isAnime ? 'Anime • $totalProgress Episodes' : 'Manga • ${totalProgress > 0 ? '$totalProgress Chapters' : 'Ongoing'}',
               style: const TextStyle(color: AppTheme.secondaryText, fontWeight: FontWeight.w500),
             ),
             const SizedBox(height: 16),
-            if (content.genres.isNotEmpty)
+            if (widget.content.genres.isNotEmpty)
               Wrap(
                 spacing: 8,
                 runSpacing: 8,
-                children: content.genres.take(4).map((genre) => Container(
+                children: widget.content.genres.take(4).map((genre) => Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: AppTheme.elevated,
@@ -85,7 +115,7 @@ class ContentPreviewSheet extends ConsumerWidget {
                 )).toList(),
               ),
             const SizedBox(height: 24),
-            if (content.description != null && content.description!.isNotEmpty) ...[
+            if (widget.content.description != null && widget.content.description!.isNotEmpty) ...[
               const Text(
                 'DESCRIPTION',
                 style: TextStyle(
@@ -97,7 +127,7 @@ class ContentPreviewSheet extends ConsumerWidget {
               ),
               const SizedBox(height: 8),
               Text(
-                content.description!,
+                widget.content.description!,
                 maxLines: 6,
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
@@ -111,7 +141,7 @@ class ContentPreviewSheet extends ConsumerWidget {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: () => _addToLibrary(context, ref),
+                onPressed: () => _addToLibrary(context),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   backgroundColor: AppTheme.accent,
@@ -129,27 +159,71 @@ class ContentPreviewSheet extends ConsumerWidget {
     );
   }
 
-  Future<void> _addToLibrary(BuildContext context, WidgetRef ref) async {
+  Future<void> _addToLibrary(BuildContext context) async {
     try {
-      if (content is AnimeEntity) {
-        await ref.read(animeRepositoryProvider).saveAnime(content as AnimeEntity);
-      } else if (content is MangaEntity) {
-        await ref.read(mangaRepositoryProvider).saveManga(content as MangaEntity);
+      bool success = false;
+      bool alreadyInLibrary = false;
+
+      if (widget.content is AnimeEntity) {
+        final existing = await ref.read(animeRepositoryProvider).getAnimeById(widget.content.id);
+        if (existing != null) {
+          alreadyInLibrary = true;
+        } else {
+          success = await ref.read(animeRepositoryProvider).saveAnime(widget.content as AnimeEntity);
+          if (success) ref.invalidate(libraryAnimeProvider);
+        }
+      } else if (widget.content is MangaEntity) {
+        final existing = await ref.read(mangaRepositoryProvider).getMangaById(widget.content.id);
+        if (existing != null) {
+          alreadyInLibrary = true;
+        } else {
+          final manga = widget.content as MangaEntity;
+          final updatedManga = manga.copyWith(
+            totalChapters: _totalChapters ?? manga.totalChapters,
+          );
+          success = await ref.read(mangaRepositoryProvider).saveManga(updatedManga);
+          if (success) ref.invalidate(libraryMangaProvider);
+        }
       }
-      if (context.mounted) {
-        Navigator.pop(context);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Added ${content.title} to Library'),
-            backgroundColor: Colors.green[700],
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+
+      if (alreadyInLibrary) {
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('This series is already in your library station.'),
+              backgroundColor: AppTheme.elevated,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+        return;
+      }
+
+      if (success) {
+        ref.invalidate(combinedLibraryProvider);
+        if (context.mounted) {
+          Navigator.pop(context);
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Added ${widget.content.title} to Library'),
+              backgroundColor: Colors.green[700],
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          );
+        }
+      } else {
+        throw Exception('Failed to save to library');
       }
     } catch (e) {
-       if (context.mounted) {
+      if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e'), backgroundColor: Colors.red[700]),
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: Colors.red[700],
+            behavior: SnackBarBehavior.floating,
+          ),
         );
       }
     }

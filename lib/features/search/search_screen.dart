@@ -8,6 +8,9 @@ import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
 import 'package:goon_tracker/features/search/search_notifier.dart';
 import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -27,8 +30,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final searchResults = ref.watch(searchNotifierProvider);
     final searchState = ref.watch(searchStateProvider);
+    final searchResults = ref.watch(searchResultsProvider(searchState.type));
 
     return Scaffold(
       body: SafeArea(
@@ -39,8 +42,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             Expanded(
               child: searchResults.when(
                 data: (results) => _buildResultsList(results, _searchController.text.isEmpty),
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, st) => Center(child: Text('Error: $e')),
+                loading: () => _buildLoadingSkeleton(),
+                error: (e, st) => Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                      const SizedBox(height: 16),
+                      Text('System Failure: $e', style: const TextStyle(color: AppTheme.secondaryText)),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(searchResultsProvider(searchState.type)),
+                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.elevated),
+                        child: const Text('RETRY INITIALIZATION'),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
@@ -70,11 +88,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             contentPadding: const EdgeInsets.symmetric(vertical: 16),
           ),
           onChanged: (value) {
-            ref.read(searchNotifierProvider.notifier).onQueryChanged(
-                  value,
-                  searchState.type,
-                  searchState.isAdult,
-                );
+            ref.read(searchResultsProvider(searchState.type).notifier).onQueryChanged(value);
           },
         ),
       ),
@@ -87,13 +101,19 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       child: Row(
         children: [
           _buildFilterChip('ANIME', state.type == SearchType.anime, () {
-            ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.anime);
-            ref.read(searchNotifierProvider.notifier).search(_searchController.text, SearchType.anime, state.isAdult);
+            if (state.type != SearchType.anime) {
+              _searchController.clear();
+              ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.anime);
+              ref.invalidate(searchResultsProvider(SearchType.anime));
+            }
           }),
           const SizedBox(width: 8),
           _buildFilterChip('MANGA', state.type == SearchType.manga, () {
-            ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.manga);
-            ref.read(searchNotifierProvider.notifier).search(_searchController.text, SearchType.manga, state.isAdult);
+            if (state.type != SearchType.manga) {
+              _searchController.clear();
+              ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.manga);
+              ref.invalidate(searchResultsProvider(SearchType.manga));
+            }
           }),
           const Spacer(),
           const Text('18+', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.secondaryText)),
@@ -103,7 +123,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
             activeColor: AppTheme.accent,
             onChanged: (val) {
               ref.read(searchStateProvider.notifier).state = state.copyWith(isAdult: val);
-              ref.read(searchNotifierProvider.notifier).search(_searchController.text, state.type, val);
+              ref.invalidate(searchResultsProvider(state.type));
             },
           ),
         ],
@@ -182,12 +202,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                item.coverImage,
+              child: CachedNetworkImage(
+                imageUrl: item.coverImage,
                 width: 85,
                 height: 120,
                 fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) => Container(color: AppTheme.elevated, width: 85, height: 120),
+                placeholder: (context, url) => Shimmer.fromColors(
+                  baseColor: AppTheme.elevated,
+                  highlightColor: AppTheme.surface,
+                  child: Container(color: Colors.white, width: 85, height: 120),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  color: AppTheme.elevated,
+                  width: 85,
+                  height: 120,
+                  child: const Icon(Icons.broken_image, color: AppTheme.secondaryText, size: 20),
+                ),
               ),
             ),
             const SizedBox(width: 16),
@@ -257,5 +287,23 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         );
       }
     }
+  }
+  Widget _buildLoadingSkeleton() {
+    return ListView.builder(
+      itemCount: 6,
+      padding: const EdgeInsets.all(16),
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: AppTheme.elevated,
+        highlightColor: AppTheme.surface,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          height: 120,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+    );
   }
 }

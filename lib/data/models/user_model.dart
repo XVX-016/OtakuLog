@@ -8,7 +8,11 @@ class UserModel {
 
   late String name;
   String? avatarPath;
-  int avgMangaReadTime = 15;
-  int avgAnimeWatchTime = 24;
+  
+  int defaultMangaReadTime = 15;
+  int defaultAnimeWatchTime = 24;
+  late String defaultSearchType;
+  late String defaultContentRating;
+  
   bool filter18Plus = false;
 }

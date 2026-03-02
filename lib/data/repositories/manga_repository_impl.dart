@@ -16,10 +16,15 @@ class MangaRepositoryImpl implements MangaRepository {
   }
 
   @override
-  Future<void> saveManga(MangaEntity manga) async {
-    await isar.writeTxn(() async {
-      await isar.mangaModels.put(MangaMapper.toModel(manga));
-    });
+  Future<bool> saveManga(MangaEntity manga) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.mangaModels.put(MangaMapper.toModel(manga));
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -29,9 +34,14 @@ class MangaRepositoryImpl implements MangaRepository {
   }
 
   @override
-  Future<void> deleteManga(String id) async {
-    await isar.writeTxn(() async {
-      await isar.mangaModels.filter().remoteIdEqualTo(id).deleteAll();
-    });
+  Future<bool> deleteManga(String id) async {
+    try {
+      return await isar.writeTxn(() async {
+        final count = await isar.mangaModels.filter().remoteIdEqualTo(id).deleteAll();
+        return count > 0;
+      });
+    } catch (_) {
+      return false;
+    }
   }
 }

@@ -112,12 +112,22 @@ class LibraryScreen extends ConsumerWidget {
             children: [
               ClipRRect(
                 borderRadius: BorderRadius.circular(8),
-                child: Image.network(
-                  item.coverImage.isNotEmpty ? item.coverImage : 'https://via.placeholder.com/150',
+                child: CachedNetworkImage(
+                  imageUrl: item.coverImage.isNotEmpty ? item.coverImage : 'https://via.placeholder.com/150',
                   width: 70,
                   height: 100,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, __, ___) => Container(color: Colors.grey[800], width: 70, height: 100, child: const Icon(Icons.error)),
+                  placeholder: (context, url) => Shimmer.fromColors(
+                    baseColor: AppTheme.elevated,
+                    highlightColor: AppTheme.surface,
+                    child: Container(color: Colors.white, width: 70, height: 100),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    color: Colors.grey[800],
+                    width: 70,
+                    height: 100,
+                    child: const Icon(Icons.broken_image, color: AppTheme.secondaryText, size: 20),
+                  ),
                 ),
               ),
               const SizedBox(width: 16),

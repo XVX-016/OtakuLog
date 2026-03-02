@@ -16,10 +16,15 @@ class AnimeRepositoryImpl implements AnimeRepository {
   }
 
   @override
-  Future<void> saveAnime(AnimeEntity anime) async {
-    await isar.writeTxn(() async {
-      await isar.animeModels.put(AnimeMapper.toModel(anime));
-    });
+  Future<bool> saveAnime(AnimeEntity anime) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.animeModels.put(AnimeMapper.toModel(anime));
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
@@ -29,9 +34,14 @@ class AnimeRepositoryImpl implements AnimeRepository {
   }
 
   @override
-  Future<void> deleteAnime(String id) async {
-    await isar.writeTxn(() async {
-      await isar.animeModels.filter().remoteIdEqualTo(id).deleteAll();
-    });
+  Future<bool> deleteAnime(String id) async {
+    try {
+      return await isar.writeTxn(() async {
+        final count = await isar.animeModels.filter().remoteIdEqualTo(id).deleteAll();
+        return count > 0;
+      });
+    } catch (_) {
+      return false;
+    }
   }
 }

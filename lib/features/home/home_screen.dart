@@ -9,6 +9,11 @@ import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/domain/entities/trackable_content.dart';
 import 'package:goon_tracker/app/providers.dart';
 import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:goon_tracker/domain/services/stats_service.dart';
+import 'package:goon_tracker/domain/entities/user_session.dart';
+
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -29,7 +34,7 @@ class HomeScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildHeader(context),
+              _buildHeader(context, ref),
               const SizedBox(height: 32),
               
               if (hasLibraryContent) ...[
@@ -73,7 +78,14 @@ class HomeScreen extends ConsumerWidget {
                   error: (e, _) => Text('Error: $e'),
                 ),
               ] else ...[
-                const GTSectionHeader(title: 'Discover Trending'),
+                _buildEmptyStateSection(
+                  context, 
+                  'Your Station is Empty', 
+                  Icons.auto_awesome_motion, 
+                  'Discover trending series and start building your ultimate library today.',
+                ),
+                const SizedBox(height: 32),
+                const GTSectionHeader(title: 'TRENDING NOW'),
                 const SizedBox(height: 16),
                 _buildTrendingGrid(context, ref),
               ],
@@ -83,10 +95,25 @@ class HomeScreen extends ConsumerWidget {
               sessionsAsync.when(
                 data: (sessions) {
                   final totalMins = sessions.isEmpty ? 0 : sessions.fold<int>(0, (sum, s) => sum + s.totalMinutes);
-                  return GTStatCard(
-                    title: 'Total Consumption Today',
-                    value: '$totalMins Minutes',
-                    icon: Icons.auto_graph,
+                  final statsService = StatsService();
+                  final avgManga = statsService.calculateAverageMinutesPerUnit(sessions, SessionContentType.manga);
+                  
+                  return Column(
+                    children: [
+                      GTStatCard(
+                        title: 'Total Consumption Today',
+                        value: '$totalMins Minutes',
+                        icon: Icons.auto_graph,
+                      ),
+                      if (avgManga > 0) ...[
+                        const SizedBox(height: 12),
+                        GTStatCard(
+                          title: 'Average Chapter Speed',
+                          value: '${avgManga.toStringAsFixed(1)} min/ch',
+                          icon: Icons.speed,
+                        ),
+                      ],
+                    ],
                   );
                 },
                 loading: () => const SizedBox.shrink(),
@@ -121,11 +148,19 @@ class HomeScreen extends ConsumerWidget {
                     Expanded(
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12),
-                        child: Image.network(
-                          item.coverImage,
+                        child: CachedNetworkImage(
+                          imageUrl: item.coverImage,
                           width: 150,
                           fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(color: AppTheme.elevated),
+                          placeholder: (context, url) => Shimmer.fromColors(
+                            baseColor: AppTheme.elevated,
+                            highlightColor: AppTheme.surface,
+                            child: Container(color: Colors.white),
+                          ),
+                          errorWidget: (context, url, error) => Container(
+                            color: AppTheme.elevated,
+                            child: const Icon(Icons.broken_image, color: AppTheme.secondaryText),
+                          ),
                         ),
                       ),
                     ),
@@ -157,34 +192,120 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildHeader(BuildContext context, WidgetRef ref) {
+    final userAsync = ref.watch(currentUserProvider);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          'WELCOME BACK',
-          style: TextStyle(color: AppTheme.secondaryText, fontSize: 12, fontWeight: FontWeight.bold),
+        userAsync.when(
+          data: (user) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _getGreeting(),
+                style: TextStyle(color: AppTheme.secondaryText, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                user?.name.toUpperCase() ?? 'COMMANDER',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          loading: () => const CircularProgressIndicator(),
+          error: (_, __) => const Text('Error'),
         ),
-        Text(
-          'Gooner 1',
-          style: Theme.of(context).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.bold),
-        ),
+        if (userAsync.value == null)
+          TextButton.icon(
+            onPressed: () => _showCreateProfile(context, ref),
+            icon: const Icon(Icons.person_add_outlined, size: 18),
+            label: const Text('SETUP'),
+            style: TextButton.styleFrom(foregroundColor: AppTheme.accent),
+          )
+        else 
+          const CircleAvatar(
+            backgroundColor: AppTheme.elevated,
+            child: Icon(Icons.person, color: AppTheme.secondaryText),
+          ),
       ],
     );
   }
 
-  Widget _buildEmptyStateCTA(BuildContext context, WidgetRef ref) {
-    final animeList = ref.watch(libraryAnimeProvider).value ?? [];
-    final mangaList = ref.watch(libraryMangaProvider).value ?? [];
-    
-    if (animeList.isNotEmpty || mangaList.isNotEmpty) return const SizedBox.shrink();
+  String _getGreeting() {
+    final hour = DateTime.now().hour;
+    if (hour < 12) return 'GOOD MORNING';
+    if (hour < 17) return 'GOOD AFTERNOON';
+    return 'GOOD EVENING';
+  }
 
-    return GTEmptyState(
-      icon: Icons.search,
-      title: 'Nothing showing yet',
-      description: 'Search and add content to start tracking your progress',
-      buttonLabel: 'FIND CONTENT',
-      onButtonPressed: () => context.go('/search'),
+  void _showCreateProfile(BuildContext context, WidgetRef ref) {
+    final nameController = TextEditingController();
+    
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        padding: EdgeInsets.fromLTRB(24, 32, 24, MediaQuery.of(context).viewInsets.bottom + 32),
+        decoration: const BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'WELCOME COMMANDER',
+              style: TextStyle(color: AppTheme.accent, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Initialize your station profile to begin tracking.',
+              style: TextStyle(color: AppTheme.secondaryText, fontSize: 14),
+            ),
+            const SizedBox(height: 24),
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              style: const TextStyle(color: AppTheme.primaryText),
+              decoration: InputDecoration(
+                hintText: 'Enter callsign...',
+                filled: true,
+                fillColor: AppTheme.elevated,
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+              ),
+            ),
+            const SizedBox(height: 32),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () async {
+                  if (nameController.text.isNotEmpty) {
+                    final user = UserEntity(
+                      name: nameController.text,
+                      defaultSearchType: 'anime',
+                      defaultContentRating: 'safe',
+                    );
+                    final success = await ref.read(userRepositoryProvider).saveUser(user);
+                    if (success) {
+                      ref.invalidate(currentUserProvider);
+                      if (context.mounted) Navigator.pop(context);
+                    }
+                  }
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppTheme.accent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                child: const Text('INITIALIZE PROFILE', style: TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -210,11 +331,19 @@ class HomeScreen extends ConsumerWidget {
               Expanded(
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(8),
-                  child: Image.network(
-                    item.coverImage,
+                  child: CachedNetworkImage(
+                    imageUrl: item.coverImage,
                     width: double.infinity,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(color: Colors.grey[800], child: const Icon(Icons.image)),
+                    placeholder: (context, url) => Shimmer.fromColors(
+                      baseColor: Colors.white10,
+                      highlightColor: Colors.white24,
+                      child: Container(color: Colors.white),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      color: Colors.grey[800],
+                      child: const Icon(Icons.image_not_supported),
+                    ),
                   ),
                 ),
               ),

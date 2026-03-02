@@ -19,7 +19,7 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
       
       // 1. Create Session
       final session = UserSessionEntity(
-        id: '0', // Isar auto-increment
+        id: '0', 
         contentId: anime.id,
         contentType: SessionContentType.anime,
         startTime: now.subtract(Duration(minutes: minutes)),
@@ -28,7 +28,8 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       // 2. Save Session
-      await ref.read(sessionRepositoryProvider).saveSession(session);
+      final sessionSaved = await ref.read(sessionRepositoryProvider).saveSession(session);
+      if (!sessionSaved) throw Exception('Failed to save session');
 
       // 3. Update Anime progress
       final updatedAnime = anime.copyWith(
@@ -38,7 +39,14 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
             : AnimeStatus.watching,
         updatedAt: now,
       );
-      await ref.read(animeRepositoryProvider).saveAnime(updatedAnime);
+      
+      final animeSaved = await ref.read(animeRepositoryProvider).saveAnime(updatedAnime);
+      if (!animeSaved) throw Exception('Failed to update anime progress');
+
+      // 4. Invalidate providers
+      ref.invalidate(libraryAnimeProvider);
+      ref.invalidate(recentSessionsProvider);
+      ref.invalidate(combinedLibraryProvider);
     });
   }
 
@@ -60,7 +68,8 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
       );
 
       // 2. Save Session
-      await ref.read(sessionRepositoryProvider).saveSession(session);
+      final sessionSaved = await ref.read(sessionRepositoryProvider).saveSession(session);
+      if (!sessionSaved) throw Exception('Failed to save session');
 
       // 3. Update Manga progress
       final updatedManga = manga.copyWith(
@@ -70,7 +79,14 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
             : MangaStatus.reading,
         updatedAt: now,
       );
-      await ref.read(mangaRepositoryProvider).saveManga(updatedManga);
+      
+      final mangaSaved = await ref.read(mangaRepositoryProvider).saveManga(updatedManga);
+      if (!mangaSaved) throw Exception('Failed to update manga progress');
+
+      // 4. Invalidate providers
+      ref.invalidate(libraryMangaProvider);
+      ref.invalidate(recentSessionsProvider);
+      ref.invalidate(combinedLibraryProvider);
     });
   }
 }

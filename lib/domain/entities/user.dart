@@ -2,16 +2,23 @@ class UserEntity {
   final String? id;
   final String name;
   final String? avatarPath;
-  final int avgMangaReadTime; // in minutes
-  final int avgAnimeWatchTime; // in minutes
+  
+  // These are user preferences/defaults
+  final int defaultMangaReadTime; 
+  final int defaultAnimeWatchTime; 
+  final String defaultSearchType; // 'anime' or 'manga'
+  final String defaultContentRating; // 'safe' or 'adult'
+  
   final bool filter18Plus;
 
   UserEntity({
     this.id,
     required this.name,
     this.avatarPath,
-    this.avgMangaReadTime = 15,
-    this.avgAnimeWatchTime = 24,
+    this.defaultMangaReadTime = 15,
+    this.defaultAnimeWatchTime = 24,
+    this.defaultSearchType = 'anime',
+    this.defaultContentRating = 'safe',
     this.filter18Plus = false,
   });
 
@@ -19,16 +26,20 @@ class UserEntity {
     String? id,
     String? name,
     String? avatarPath,
-    int? avgMangaReadTime,
-    int? avgAnimeWatchTime,
+    int? defaultMangaReadTime,
+    int? defaultAnimeWatchTime,
+    String? defaultSearchType,
+    String? defaultContentRating,
     bool? filter18Plus,
   }) {
     return UserEntity(
       id: id ?? this.id,
       name: name ?? this.name,
       avatarPath: avatarPath ?? this.avatarPath,
-      avgMangaReadTime: avgMangaReadTime ?? this.avgMangaReadTime,
-      avgAnimeWatchTime: avgAnimeWatchTime ?? this.avgAnimeWatchTime,
+      defaultMangaReadTime: defaultMangaReadTime ?? this.defaultMangaReadTime,
+      defaultAnimeWatchTime: defaultAnimeWatchTime ?? this.defaultAnimeWatchTime,
+      defaultSearchType: defaultSearchType ?? this.defaultSearchType,
+      defaultContentRating: defaultContentRating ?? this.defaultContentRating,
       filter18Plus: filter18Plus ?? this.filter18Plus,
     );
   }
