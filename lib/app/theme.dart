@@ -72,7 +72,7 @@ class AppTheme {
         labelStyle: const TextStyle(color: secondaryText),
         hintStyle: const TextStyle(color: secondaryText),
       ),
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         color: surface,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),

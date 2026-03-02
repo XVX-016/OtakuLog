@@ -43,7 +43,7 @@ const DailyActivitySchema = CollectionSchema(
       id: -7552997827385218417,
       name: r'date',
       unique: true,
-      replace: false,
+      replace: true,
       properties: [
         IndexPropertySchema(
           name: r'date',

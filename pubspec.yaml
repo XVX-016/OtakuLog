@@ -22,6 +22,7 @@ dependencies:
   local_auth: any
   shimmer: any
   google_fonts: any
+  graphql_flutter: any
 
 dev_dependencies:
   flutter_test:
@@ -29,6 +30,7 @@ dev_dependencies:
   flutter_lints: any
   build_runner: any
   isar_generator: any
+  mocktail: any
 
 flutter:
   uses-material-design: true

@@ -1,28 +1,65 @@
-class Manga {
-  final int id;
-  final int mangaId;
-  final String title;
-  final int totalChapters;
-  final int readChapters;
-  final int? totalVolumes;
-  final int readVolumes;
-  final double rating;
-  final DateTime startedAt;
-  final DateTime? completedAt;
+import 'trackable_content.dart';
 
-  Manga({
+enum MangaStatus { reading, completed, dropped, onHold }
+
+class MangaEntity implements TrackableContent {
+  @override
+  final String id;
+  @override
+  final String title;
+  @override
+  final String coverImage;
+  
+  final int totalChapters;
+  final int currentChapter;
+  final MangaStatus status;
+  @override
+  final double? rating;
+  final bool isAdult;
+  
+  final DateTime createdAt;
+  @override
+  final DateTime updatedAt;
+
+  @override
+  int get currentProgress => currentChapter;
+  @override
+  int get totalProgress => totalChapters;
+
+  MangaEntity({
     required this.id,
-    required this.mangaId,
     required this.title,
+    required this.coverImage,
     required this.totalChapters,
-    required this.readChapters,
-    this.totalVolumes,
-    required this.readVolumes,
-    required this.rating,
-    required this.startedAt,
-    this.completedAt,
+    required this.currentChapter,
+    required this.status,
+    this.rating,
+    required this.isAdult,
+    required this.createdAt,
+    required this.updatedAt,
   });
 
-  double get progress => totalChapters > 0 ? readChapters / totalChapters : 0.0;
-  bool get isCompleted => readChapters >= totalChapters;
+  MangaEntity copyWith({
+    String? title,
+    String? coverImage,
+    int? totalChapters,
+    int? currentChapter,
+    MangaStatus? status,
+    double? rating,
+    bool? isAdult,
+    DateTime? updatedAt,
+  }) {
+    return MangaEntity(
+      id: id,
+      title: title ?? this.title,
+      coverImage: coverImage ?? this.coverImage,
+      totalChapters: totalChapters ?? this.totalChapters,
+      currentChapter: currentChapter ?? this.currentChapter,
+      status: status ?? this.status,
+      rating: rating ?? this.rating,
+      isAdult: isAdult ?? this.isAdult,
+      createdAt: createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
 }

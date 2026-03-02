@@ -4,6 +4,10 @@ import 'package:goon_tracker/features/home/home_screen.dart';
 import 'package:goon_tracker/features/library/library_screen.dart';
 import 'package:goon_tracker/features/search/search_screen.dart';
 import 'package:goon_tracker/features/stats/stats_screen.dart';
+import 'package:goon_tracker/features/details/anime_details_screen.dart';
+import 'package:goon_tracker/features/details/manga_details_screen.dart';
+import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -35,6 +39,27 @@ final router = GoRouter(
           builder: (context, state) => const StatsScreen(),
         ),
       ],
+    ),
+    GoRoute(
+      path: '/content/:id/:type',
+      builder: (context, state) {
+        final id = state.pathParameters['id']!;
+        final type = state.pathParameters['type']!;
+        
+        return Consumer(
+          builder: (context, ref, child) {
+            if (type == 'anime') {
+              final animeList = ref.watch(libraryAnimeProvider).value ?? [];
+              final anime = animeList.firstWhere((a) => a.id == id);
+              return AnimeDetailScreen(anime: anime);
+            } else {
+              final mangaList = ref.watch(libraryMangaProvider).value ?? [];
+              final manga = mangaList.firstWhere((m) => m.id == id);
+              return MangaDetailScreen(manga: manga);
+            }
+          },
+        );
+      },
     ),
   ],
 );
