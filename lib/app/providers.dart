@@ -11,6 +11,7 @@ import 'package:goon_tracker/domain/repositories/manga_repository.dart';
 import 'package:goon_tracker/domain/repositories/search_repository.dart';
 import 'package:goon_tracker/domain/repositories/session_repository.dart';
 import 'package:goon_tracker/domain/services/stats_service.dart';
+import 'package:goon_tracker/domain/entities/trackable_content.dart';
 
 final isarProvider = Provider((ref) => IsarService.instance);
 
@@ -38,3 +39,12 @@ final searchRepositoryProvider = Provider<SearchRepository>((ref) {
     mangadexService: ref.watch(mangadexServiceProvider),
   );
 });
+
+final trendingAnimeProvider = FutureProvider<List<TrackableContent>>((ref) {
+  return ref.watch(searchRepositoryProvider).getTrendingAnime();
+});
+
+final trendingMangaProvider = FutureProvider<List<TrackableContent>>((ref) {
+  return ref.watch(searchRepositoryProvider).getTrendingManga();
+});
+

@@ -2,12 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
-  static const Color background = Color(0xFF0F0F12);
-  static const Color surface = Color(0xFF18181C);
-  static const Color elevated = Color(0xFF202026);
-  static const Color accent = Color(0xFF8E1C2D);
-  static const Color primaryText = Color(0xFFF1F1F3);
-  static const Color secondaryText = Color(0xFFA1A1A8);
+  static const Color background = Color(0xFF0A0A0C);
+  static const Color surface = Color(0xFF121216);
+  static const Color elevated = Color(0xFF1A1A20);
+  static const Color accent = Color(0xFF9E1B32); // Slightly more vibrant crimson
+  static const Color primaryText = Color(0xFFFFFFFF);
+  static const Color secondaryText = Color(0xFF8E8E93);
 
   static ThemeData get darkTheme {
     return ThemeData(
@@ -22,60 +22,52 @@ class AppTheme {
         onSurface: primaryText,
         secondary: secondaryText,
       ),
-      textTheme: GoogleFonts.interTextTheme().copyWith(
-        displayLarge: const TextStyle(color: primaryText, fontWeight: FontWeight.bold),
-        displayMedium: const TextStyle(color: primaryText, fontWeight: FontWeight.bold),
-        bodyLarge: const TextStyle(color: primaryText),
-        bodyMedium: const TextStyle(color: secondaryText),
+      textTheme: GoogleFonts.outfitTextTheme().copyWith(
+        displayLarge: GoogleFonts.outfit(color: primaryText, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+        displayMedium: GoogleFonts.outfit(color: primaryText, fontWeight: FontWeight.bold, letterSpacing: -0.5),
+        headlineMedium: GoogleFonts.outfit(color: primaryText, fontWeight: FontWeight.w600),
+        bodyLarge: GoogleFonts.inter(color: primaryText, fontSize: 16),
+        bodyMedium: GoogleFonts.inter(color: secondaryText, fontSize: 14),
+        labelSmall: GoogleFonts.inter(color: secondaryText, fontWeight: FontWeight.bold, letterSpacing: 1.2),
       ),
       appBarTheme: const AppBarTheme(
         backgroundColor: background,
         elevation: 0,
+        centerTitle: false,
         titleTextStyle: TextStyle(
           color: primaryText,
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.bold,
+          letterSpacing: -0.5,
         ),
       ),
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: surface,
+        backgroundColor: background,
         selectedItemColor: accent,
         unselectedItemColor: secondaryText,
         type: BottomNavigationBarType.fixed,
-        elevation: 8,
+        elevation: 0,
+        selectedLabelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 11),
+        unselectedLabelStyle: TextStyle(fontSize: 11),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: accent,
           foregroundColor: primaryText,
+          elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12),
           ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+          textStyle: const TextStyle(fontWeight: FontWeight.bold, letterSpacing: 0.5),
         ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        filled: true,
-        fillColor: elevated,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: BorderSide.none,
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
-          borderSide: const BorderSide(color: accent, width: 1),
-        ),
-        labelStyle: const TextStyle(color: secondaryText),
-        hintStyle: const TextStyle(color: secondaryText),
       ),
       cardTheme: CardThemeData(
         color: surface,
+        elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withOpacity(0.05)),
         ),
       ),
     );

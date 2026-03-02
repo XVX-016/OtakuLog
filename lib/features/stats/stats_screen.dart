@@ -31,22 +31,34 @@ class StatsScreen extends ConsumerWidget {
               children: [
                 _buildHeroStat(context, double.parse(totalHours)),
                 const SizedBox(height: 32),
-                const GTSectionHeader(title: 'Weekly Activity'),
+                const GTSectionHeader(title: 'Activity Breakdown'),
+                const SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _buildAnimatedStatCard(
+                        'Current Streak',
+                        '$streakCount Days',
+                        Icons.local_fire_department,
+                        Colors.orange,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _buildAnimatedStatCard(
+                        'Today',
+                        '${statsService.calculateTodayMinutes(sessions)} m',
+                        Icons.today,
+                        AppTheme.accent,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 32),
+                const GTSectionHeader(title: 'Weekly Trends'),
+                const SizedBox(height: 16),
                 _buildWeeklyChart(weeklySummary),
                 const SizedBox(height: 32),
-                const GTSectionHeader(title: 'Overview'),
-                GTStatCard(
-                  title: 'Current Streak',
-                  value: '$streakCount Days',
-                  icon: Icons.local_fire_department,
-                ),
-                const SizedBox(height: 12),
-                GTStatCard(
-                  title: 'Today Consumption',
-                  value: '${statsService.calculateTodayMinutes(sessions)} Minutes',
-                  icon: Icons.today,
-                ),
-                const SizedBox(height: 12),
                 _buildMostConsumedCard(sessions),
               ],
             ),
@@ -156,6 +168,42 @@ class StatsScreen extends ConsumerWidget {
     );
   }
 
+  Widget _buildAnimatedStatCard(String title, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white.withOpacity(0.05)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: 24),
+          const SizedBox(height: 16),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.primaryText,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title.toUpperCase(),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: AppTheme.secondaryText,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildMostConsumedCard(List<UserSessionEntity> sessions) {
     int animeMins = 0;
     int mangaMins = 0;
@@ -173,7 +221,7 @@ class StatsScreen extends ConsumerWidget {
     final icon = isAnime ? Icons.tv : Icons.menu_book;
 
     return GTStatCard(
-      title: 'Most Consumed Type',
+      title: 'Dominant Medium',
       value: typeLabel,
       icon: icon,
     );

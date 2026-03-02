@@ -15,6 +15,10 @@ class MangaEntity implements TrackableContent {
   final MangaStatus status;
   @override
   final double? rating;
+  @override
+  final List<String> genres;
+  @override
+  final String? description;
   final bool isAdult;
   
   final DateTime createdAt;
@@ -34,6 +38,8 @@ class MangaEntity implements TrackableContent {
     required this.currentChapter,
     required this.status,
     this.rating,
+    required this.genres,
+    this.description,
     required this.isAdult,
     required this.createdAt,
     required this.updatedAt,
@@ -57,6 +63,8 @@ class MangaEntity implements TrackableContent {
       currentChapter: currentChapter ?? this.currentChapter,
       status: status ?? this.status,
       rating: rating ?? this.rating,
+      genres: genres,
+      description: description ?? this.description,
       isAdult: isAdult ?? this.isAdult,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

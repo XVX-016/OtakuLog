@@ -21,4 +21,14 @@ class SearchRepositoryImpl implements SearchRepository {
   Future<List<TrackableContent>> searchManga(String query, {bool isAdult = false}) async {
     return await mangadexService.searchManga(query, isAdult);
   }
+
+  @override
+  Future<List<TrackableContent>> getTrendingAnime() async {
+    return await anilistService.fetchTrendingAnime();
+  }
+
+  @override
+  Future<List<TrackableContent>> getTrendingManga({bool isAdult = false}) async {
+    return await mangadexService.fetchTrendingManga(isAdult);
+  }
 }

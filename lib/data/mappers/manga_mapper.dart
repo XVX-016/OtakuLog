@@ -11,6 +11,8 @@ class MangaMapper {
       currentChapter: model.currentChapter,
       status: _mapStatusToEntity(model.status),
       rating: model.rating,
+      genres: model.genres,
+      description: model.description,
       isAdult: model.isAdult,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
@@ -26,6 +28,8 @@ class MangaMapper {
       ..currentChapter = entity.currentChapter
       ..status = _mapStatusToModel(entity.status)
       ..rating = entity.rating
+      ..genres = entity.genres
+      ..description = entity.description
       ..isAdult = entity.isAdult
       ..createdAt = entity.createdAt
       ..updatedAt = entity.updatedAt;

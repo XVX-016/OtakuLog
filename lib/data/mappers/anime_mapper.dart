@@ -11,6 +11,8 @@ class AnimeMapper {
       currentEpisode: model.currentEpisode,
       status: _mapStatusToEntity(model.status),
       rating: model.rating,
+      genres: model.genres,
+      description: model.description,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
     );
@@ -25,6 +27,8 @@ class AnimeMapper {
       ..currentEpisode = entity.currentEpisode
       ..status = _mapStatusToModel(entity.status)
       ..rating = entity.rating
+      ..genres = entity.genres
+      ..description = entity.description
       ..createdAt = entity.createdAt
       ..updatedAt = entity.updatedAt;
   }

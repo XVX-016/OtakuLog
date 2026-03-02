@@ -15,6 +15,10 @@ class AnimeEntity implements TrackableContent {
   final AnimeStatus status;
   @override
   final double? rating;
+  @override
+  final List<String> genres;
+  @override
+  final String? description;
   
   final DateTime createdAt;
   @override
@@ -33,6 +37,8 @@ class AnimeEntity implements TrackableContent {
     required this.currentEpisode,
     required this.status,
     this.rating,
+    required this.genres,
+    this.description,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -54,6 +60,8 @@ class AnimeEntity implements TrackableContent {
       currentEpisode: currentEpisode ?? this.currentEpisode,
       status: status ?? this.status,
       rating: rating ?? this.rating,
+      genres: genres, // Typically doesn't change
+      description: description ?? this.description,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );

@@ -18,6 +18,8 @@ class MangaModel {
   late MangaStatusModel status;
   
   double? rating;
+  late List<String> genres;
+  String? description;
   late bool isAdult;
   
   late DateTime createdAt;

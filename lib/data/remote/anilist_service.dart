@@ -6,9 +6,11 @@ class AnilistService {
 
   static const String _mediaFields = r'''
     id
-    title { romaji english }
+    title { romaji english native }
     coverImage { large }
     episodes
+    genres
+    description(asHtml: false)
     averageScore
     updatedAt
   ''';
@@ -29,8 +31,27 @@ class AnilistService {
       'variables': {'search': query, 'isAdult': isAdult},
     });
 
-    final List media = response.data['data']['Page']['media'];
-    return media.map((m) => _mapToEntity(m)).toList();
+    final List mediaList = response.data['data']['Page']['media'];
+    return mediaList.map((m) => _mapToEntity(m)).toList();
+  }
+
+  Future<List<AnimeEntity>> fetchTrendingAnime() async {
+    const String graphQLQuery = r'''
+      query {
+        Page(page: 1, perPage: 10) {
+          media(type: ANIME, sort: TRENDING_DESC) {
+            ''' + _mediaFields + r'''
+          }
+        }
+      }
+    ''';
+
+    final response = await _dio.post('', data: {
+      'query': graphQLQuery,
+    });
+
+    final List mediaList = response.data['data']['Page']['media'];
+    return mediaList.map((m) => _mapToEntity(m)).toList();
   }
 
   Future<AnimeEntity> fetchAnimeDetails(String id) async {
@@ -51,14 +72,19 @@ class AnilistService {
   }
 
   AnimeEntity _mapToEntity(Map<String, dynamic> m) {
+    final titleData = m['title'];
+    final resolvedTitle = titleData['english'] ?? titleData['romaji'] ?? titleData['native'] ?? 'Unknown';
+
     return AnimeEntity(
       id: m['id'].toString(),
-      title: m['title']['english'] ?? m['title']['romaji'],
+      title: resolvedTitle,
       coverImage: m['coverImage']['large'],
       totalEpisodes: m['episodes'] ?? 0,
       currentEpisode: 0,
       status: AnimeStatus.watching,
       rating: m['averageScore'] != null ? m['averageScore'].toDouble() / 10.0 : null,
+      genres: List<String>.from(m['genres'] ?? []),
+      description: m['description'],
       createdAt: DateTime.now(),
       updatedAt: DateTime.fromMillisecondsSinceEpoch((m['updatedAt'] ?? 0) * 1000),
     );

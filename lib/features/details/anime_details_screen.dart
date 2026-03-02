@@ -33,28 +33,98 @@ class AnimeDetailScreen extends ConsumerWidget {
                 children: [
                   Text(anime.title, style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 8),
-                  Text(
-                    '${anime.currentEpisode} / ${anime.totalEpisodes} Episodes',
-                    style: const TextStyle(color: AppTheme.secondaryText),
-                  ),
+                  if (anime.genres.isNotEmpty)
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: anime.genres.map((g) => Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppTheme.elevated,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.white10),
+                        ),
+                        child: Text(g, style: const TextStyle(fontSize: 11, color: AppTheme.secondaryText)),
+                      )).toList(),
+                    ),
                   const SizedBox(height: 24),
+                  if (anime.description != null) ...[
+                    const Text('DESCRIPTION', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.secondaryText, letterSpacing: 1.2)),
+                    const SizedBox(height: 8),
+                    Text(
+                      anime.description!,
+                      style: TextStyle(color: AppTheme.primaryText.withOpacity(0.8), height: 1.5),
+                    ),
+                    const SizedBox(height: 32),
+                  ],
+                  _buildProgressSection(context, ref),
+                  const SizedBox(height: 32),
                   _buildStatusDropdown(context, ref),
                   const SizedBox(height: 16),
                   _buildRatingSelector(context, ref),
                   const SizedBox(height: 32),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () => ref.read(trackerNotifierProvider.notifier).logAnimeEpisode(anime, 24),
-                      child: const Text('LOG EPISODE (24m)'),
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildProgressSection(BuildContext context, WidgetRef ref) {
+    final progress = anime.totalEpisodes > 0 ? anime.currentEpisode / anime.totalEpisodes : 0.0;
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text('YOUR PROGRESS', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.secondaryText, letterSpacing: 1.2)),
+            Text('${anime.currentEpisode} / ${anime.totalEpisodes}', style: const TextStyle(fontWeight: FontWeight.bold)),
+          ],
+        ),
+        const SizedBox(height: 12),
+        ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: LinearProgressIndicator(
+            value: progress,
+            minHeight: 8,
+            backgroundColor: AppTheme.elevated,
+            color: AppTheme.accent,
+          ),
+        ),
+        const SizedBox(height: 24),
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('STATION LOG', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.secondaryText)),
+                  const SizedBox(height: 4),
+                  Text('Estimated: ${anime.currentEpisode * 24}m total spent', style: const TextStyle(fontSize: 12)),
+                ],
+              ),
+            ),
+            ElevatedButton.icon(
+              onPressed: () {
+                ref.read(trackerNotifierProvider.notifier).logAnimeEpisode(anime, 24);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Logged 1 Episode (+24m)'), behavior: SnackBarBehavior.floating),
+                );
+              },
+              icon: const Icon(Icons.add),
+              label: const Text('LOG EPISODE'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accent,
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

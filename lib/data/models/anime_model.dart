@@ -21,6 +21,10 @@ class AnimeModel {
   late AnimeStatusModel status;
   
   double? rating;
+
+  late List<String> genres;
+
+  String? description;
   
   late DateTime createdAt;
   

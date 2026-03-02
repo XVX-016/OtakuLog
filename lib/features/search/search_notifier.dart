@@ -33,12 +33,16 @@ class SearchNotifier extends AutoDisposeAsyncNotifier<List<TrackableContent>> {
   Timer? _debounceTimer;
 
   @override
-  FutureOr<List<TrackableContent>> build() {
-    return [];
+  FutureOr<List<TrackableContent>> build() async {
+    return await fetchTrending(SearchType.anime, false);
   }
 
   void onQueryChanged(String query, SearchType type, bool isAdult) {
     _debounceTimer?.cancel();
+    if (query.isEmpty) {
+      search('', type, isAdult);
+      return;
+    }
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       search(query, type, isAdult);
     });
@@ -46,7 +50,8 @@ class SearchNotifier extends AutoDisposeAsyncNotifier<List<TrackableContent>> {
 
   Future<void> search(String query, SearchType type, bool isAdult) async {
     if (query.isEmpty) {
-      state = const AsyncValue.data([]);
+      state = const AsyncValue.loading();
+      state = await AsyncValue.guard(() => fetchTrending(type, isAdult));
       return;
     }
 
@@ -59,6 +64,15 @@ class SearchNotifier extends AutoDisposeAsyncNotifier<List<TrackableContent>> {
         return await repository.searchManga(query, isAdult: isAdult);
       }
     });
+  }
+
+  Future<List<TrackableContent>> fetchTrending(SearchType type, bool isAdult) async {
+    final repository = ref.read(searchRepositoryProvider);
+    if (type == SearchType.anime) {
+      return await repository.getTrendingAnime();
+    } else {
+      return await repository.getTrendingManga(isAdult: isAdult);
+    }
   }
 }
 

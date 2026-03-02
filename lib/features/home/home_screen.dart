@@ -7,6 +7,8 @@ import 'package:go_router/go_router.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/domain/entities/trackable_content.dart';
+import 'package:goon_tracker/app/providers.dart';
+import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
 
 class HomeScreen extends ConsumerWidget {
   const HomeScreen({super.key});
@@ -16,6 +18,9 @@ class HomeScreen extends ConsumerWidget {
     final sessionsAsync = ref.watch(recentSessionsProvider);
     final animeListAsync = ref.watch(libraryAnimeProvider);
     final mangaListAsync = ref.watch(libraryMangaProvider);
+
+    final hasLibraryContent = (animeListAsync.value?.isNotEmpty ?? false) || 
+                             (mangaListAsync.value?.isNotEmpty ?? false);
 
     return Scaffold(
       body: SafeArea(
@@ -27,48 +32,51 @@ class HomeScreen extends ConsumerWidget {
               _buildHeader(context),
               const SizedBox(height: 32),
               
-              // Continue Watching (Anime)
-              const GTSectionHeader(title: 'Continue Watching'),
-              animeListAsync.when(
-                data: (list) {
-                  final active = list.where((a) => a.currentEpisode < a.totalEpisodes).toList();
-                  if (active.isEmpty) return const SizedBox.shrink();
-                  return SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: active.length,
-                      itemBuilder: (context, index) => _buildProgressCard(context, ref, active[index]),
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Text('Error: $e'),
-              ),
-              
-              const SizedBox(height: 24),
-              
-              // Continue Reading (Manga)
-              const GTSectionHeader(title: 'Continue Reading'),
-              mangaListAsync.when(
-                data: (list) {
-                  final active = list.where((m) => m.currentChapter < m.totalChapters || m.totalChapters == 0).toList();
-                  if (active.isEmpty) return const SizedBox.shrink();
-                  return SizedBox(
-                    height: 200,
-                    child: ListView.builder(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: active.length,
-                      itemBuilder: (context, index) => _buildProgressCard(context, ref, active[index]),
-                    ),
-                  );
-                },
-                loading: () => const Center(child: CircularProgressIndicator()),
-                error: (e, _) => Text('Error: $e'),
-              ),
-
-              // Empty State CTA if both are empty
-              _buildEmptyStateCTA(context, ref),
+              if (hasLibraryContent) ...[
+                // Continue Watching (Anime)
+                const GTSectionHeader(title: 'Continue Watching'),
+                animeListAsync.when(
+                  data: (list) {
+                    final active = list.where((a) => a.currentEpisode < a.totalEpisodes).toList();
+                    if (active.isEmpty) return const SizedBox.shrink();
+                    return SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: active.length,
+                        itemBuilder: (context, index) => _buildProgressCard(context, ref, active[index]),
+                      ),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Error: $e'),
+                ),
+                
+                const SizedBox(height: 24),
+                
+                // Continue Reading (Manga)
+                const GTSectionHeader(title: 'Continue Reading'),
+                mangaListAsync.when(
+                  data: (list) {
+                    final active = list.where((m) => m.currentChapter < m.totalChapters || m.totalChapters == 0).toList();
+                    if (active.isEmpty) return const SizedBox.shrink();
+                    return SizedBox(
+                      height: 200,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: active.length,
+                        itemBuilder: (context, index) => _buildProgressCard(context, ref, active[index]),
+                      ),
+                    );
+                  },
+                  loading: () => const Center(child: CircularProgressIndicator()),
+                  error: (e, _) => Text('Error: $e'),
+                ),
+              ] else ...[
+                const GTSectionHeader(title: 'Discover Trending'),
+                const SizedBox(height: 16),
+                _buildTrendingGrid(context, ref),
+              ],
 
               const SizedBox(height: 32),
               const GTSectionHeader(title: 'Daily Insights'),
@@ -88,6 +96,64 @@ class HomeScreen extends ConsumerWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTrendingGrid(BuildContext context, WidgetRef ref) {
+    final trendingAnime = ref.watch(trendingAnimeProvider);
+    
+    return trendingAnime.when(
+      data: (list) => SizedBox(
+        height: 240,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          itemCount: list.length,
+          itemBuilder: (context, index) {
+            final item = list[index];
+            return Container(
+              width: 150,
+              margin: const EdgeInsets.only(right: 16),
+              child: InkWell(
+                onTap: () => _showPreview(context, item),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: Image.network(
+                          item.coverImage,
+                          width: 150,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(color: AppTheme.elevated),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      item.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (e, _) => Text('Error: $e'),
+    );
+  }
+
+  void _showPreview(BuildContext context, TrackableContent item) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => ContentPreviewSheet(content: item),
     );
   }
 
