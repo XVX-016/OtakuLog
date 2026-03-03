@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:goon_tracker/app/providers.dart';
 import 'package:goon_tracker/features/home/home_screen.dart';
 import 'package:goon_tracker/features/library/library_screen.dart';
 import 'package:goon_tracker/features/search/search_screen.dart';
@@ -7,6 +9,8 @@ import 'package:goon_tracker/features/stats/stats_screen.dart';
 import 'package:goon_tracker/features/details/anime_details_screen.dart';
 import 'package:goon_tracker/features/details/manga_details_screen.dart';
 import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:goon_tracker/domain/entities/anime.dart';
+import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -50,11 +54,11 @@ final router = GoRouter(
           builder: (context, ref, child) {
             if (type == 'anime') {
               final animeList = ref.watch(libraryAnimeProvider).value ?? [];
-              final anime = animeList.firstWhere((a) => a.id == id);
+              final anime = animeList.firstWhere((a) => a.id == id) as AnimeEntity;
               return AnimeDetailScreen(anime: anime);
             } else {
               final mangaList = ref.watch(libraryMangaProvider).value ?? [];
-              final manga = mangaList.firstWhere((m) => m.id == id);
+              final manga = mangaList.firstWhere((m) => m.id == id) as MangaEntity;
               return MangaDetailScreen(manga: manga);
             }
           },

@@ -6,7 +6,7 @@ class UserSessionEntity {
   final SessionContentType contentType;
   final DateTime startTime;
   final DateTime endTime;
-  final int unitsConsumed; // Episodes or Chapters
+  final int unitsConsumed;
 
   UserSessionEntity({
     required this.id,

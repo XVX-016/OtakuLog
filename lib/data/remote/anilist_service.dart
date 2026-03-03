@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:goon_tracker/data/mappers/anime_mapper.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 
 class AnilistService {

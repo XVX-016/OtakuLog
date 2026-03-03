@@ -6,13 +6,16 @@ part 'user_model.g.dart';
 class UserModel {
   Id id = Isar.autoIncrement;
 
+  @Index(unique: true, replace: true)
+  late String localId;
+
   late String name;
   String? avatarPath;
-  
-  int defaultMangaReadTime = 15;
-  int defaultAnimeWatchTime = 24;
+  late DateTime createdAt;
+  late DateTime updatedAt;
   late String defaultSearchType;
   late String defaultContentRating;
-  
-  bool filter18Plus = false;
+  late int defaultAnimeWatchTime;
+  late int defaultMangaReadTime;
+  late bool filter18Plus;
 }

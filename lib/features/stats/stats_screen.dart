@@ -4,7 +4,6 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:goon_tracker/app/providers.dart';
 import 'package:goon_tracker/app/theme.dart';
 import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
 import 'package:goon_tracker/domain/entities/user_session.dart';
 import 'package:intl/intl.dart';
 

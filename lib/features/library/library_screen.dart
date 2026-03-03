@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:goon_tracker/app/theme.dart';
 import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:goon_tracker/app/providers.dart';
 import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:go_router/go_router.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:go_router/go_router.dart';
 
 enum LibraryFilter { all, anime, manga }
 

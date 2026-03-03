@@ -16,6 +16,12 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
+  Future<List<UserSessionEntity>> getRecentSessions() async {
+    final models = await isar.userSessionModels.where().sortByStartTimeDesc().limit(20).findAll();
+    return models.map(UserSessionMapper.toEntity).toList();
+  }
+
+  @override
   Future<List<UserSessionEntity>> getSessionsInRange(DateTime start, DateTime end) async {
     final models = await isar.userSessionModels
         .filter()
@@ -27,19 +33,29 @@ class SessionRepositoryImpl implements SessionRepository {
   }
 
   @override
-  Future<void> saveSession(UserSessionEntity session) async {
-    await isar.writeTxn(() async {
-      await isar.userSessionModels.put(UserSessionMapper.toModel(session));
-    });
+  Future<bool> saveSession(UserSessionEntity session) async {
+    try {
+      await isar.writeTxn(() async {
+        await isar.userSessionModels.put(UserSessionMapper.toModel(session));
+      });
+      return true;
+    } catch (_) {
+      return false;
+    }
   }
 
   @override
-  Future<void> deleteSession(String id) async {
+  Future<bool> deleteSession(String id) async {
     final isarId = int.tryParse(id);
     if (isarId != null) {
-      await isar.writeTxn(() async {
-        await isar.userSessionModels.delete(isarId);
-      });
+      try {
+        return await isar.writeTxn(() async {
+          return await isar.userSessionModels.delete(isarId);
+        });
+      } catch (_) {
+        return false;
+      }
     }
+    return false;
   }
 }

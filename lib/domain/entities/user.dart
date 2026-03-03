@@ -1,24 +1,25 @@
 class UserEntity {
-  final String? id;
+  final String id;
   final String name;
   final String? avatarPath;
-  
-  // These are user preferences/defaults
-  final int defaultMangaReadTime; 
-  final int defaultAnimeWatchTime; 
-  final String defaultSearchType; // 'anime' or 'manga'
-  final String defaultContentRating; // 'safe' or 'adult'
-  
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final String defaultSearchType;
+  final String defaultContentRating;
+  final int defaultAnimeWatchTime;
+  final int defaultMangaReadTime;
   final bool filter18Plus;
 
   UserEntity({
-    this.id,
+    required this.id,
     required this.name,
     this.avatarPath,
-    this.defaultMangaReadTime = 15,
-    this.defaultAnimeWatchTime = 24,
+    required this.createdAt,
+    required this.updatedAt,
     this.defaultSearchType = 'anime',
-    this.defaultContentRating = 'safe',
+    this.defaultContentRating = '10',
+    this.defaultAnimeWatchTime = 24,
+    this.defaultMangaReadTime = 10,
     this.filter18Plus = false,
   });
 
@@ -26,20 +27,24 @@ class UserEntity {
     String? id,
     String? name,
     String? avatarPath,
-    int? defaultMangaReadTime,
-    int? defaultAnimeWatchTime,
+    DateTime? createdAt,
+    DateTime? updatedAt,
     String? defaultSearchType,
     String? defaultContentRating,
+    int? defaultAnimeWatchTime,
+    int? defaultMangaReadTime,
     bool? filter18Plus,
   }) {
     return UserEntity(
       id: id ?? this.id,
       name: name ?? this.name,
       avatarPath: avatarPath ?? this.avatarPath,
-      defaultMangaReadTime: defaultMangaReadTime ?? this.defaultMangaReadTime,
-      defaultAnimeWatchTime: defaultAnimeWatchTime ?? this.defaultAnimeWatchTime,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       defaultSearchType: defaultSearchType ?? this.defaultSearchType,
       defaultContentRating: defaultContentRating ?? this.defaultContentRating,
+      defaultAnimeWatchTime: defaultAnimeWatchTime ?? this.defaultAnimeWatchTime,
+      defaultMangaReadTime: defaultMangaReadTime ?? this.defaultMangaReadTime,
       filter18Plus: filter18Plus ?? this.filter18Plus,
     );
   }

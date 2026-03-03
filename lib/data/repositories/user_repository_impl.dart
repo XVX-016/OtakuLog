@@ -1,8 +1,23 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/local/isar_service.dart';
 import 'package:goon_tracker/data/models/user_model.dart';
+import 'package:goon_tracker/data/mappers/user_mapper.dart';
 import 'package:goon_tracker/domain/entities/user.dart';
 import 'package:goon_tracker/domain/repositories/user_repository.dart';
+
+extension on QueryBuilder<UserModel, UserModel, QFilterCondition> {
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+}
 
 class UserRepositoryImpl implements UserRepository {
   final Isar _isar;
@@ -10,34 +25,19 @@ class UserRepositoryImpl implements UserRepository {
   UserRepositoryImpl(this._isar);
 
   @override
-  Future<UserEntity?> getUser() async {
-    final model = await _isar.userModels.where().findFirst();
+  Future<UserEntity?> getUser(String id) async {
+    final model = await _isar.userModels.filter().localIdEqualTo(id).findFirst();
     if (model == null) return null;
-    return UserEntity(
-      id: model.id.toString(),
-      name: model.name,
-      avatarPath: model.avatarPath,
-      defaultMangaReadTime: model.defaultMangaReadTime,
-      defaultAnimeWatchTime: model.defaultAnimeWatchTime,
-      defaultSearchType: model.defaultSearchType,
-      defaultContentRating: model.defaultContentRating,
-      filter18Plus: model.filter18Plus,
-    );
+    return UserMapper.toEntity(model);
   }
 
   @override
   Future<bool> saveUser(UserEntity user) async {
-    final model = UserModel()
-      ..name = user.name
-      ..avatarPath = user.avatarPath
-      ..defaultMangaReadTime = user.defaultMangaReadTime
-      ..defaultAnimeWatchTime = user.defaultAnimeWatchTime
-      ..defaultSearchType = user.defaultSearchType
-      ..defaultContentRating = user.defaultContentRating
-      ..filter18Plus = user.filter18Plus;
+    final model = UserMapper.toModel(user);
     
-    if (user.id != null) {
-      model.id = int.tryParse(user.id!) ?? Isar.autoIncrement;
+    final existing = await _isar.userModels.filter().localIdEqualTo(user.id).findFirst();
+    if (existing != null) {
+      model.id = existing.id;
     }
 
     try {

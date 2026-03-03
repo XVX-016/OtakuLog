@@ -177,3 +177,26 @@ class GTEmptyState extends StatelessWidget {
     );
   }
 }
+
+class GTCircularAvatar extends StatelessWidget {
+  final String? path;
+  final double radius;
+
+  const GTCircularAvatar({super.key, this.path, this.radius = 24});
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: radius,
+      backgroundColor: AppTheme.elevated,
+      backgroundImage: (path != null && path!.isNotEmpty)
+          ? (path!.startsWith('http') 
+              ? NetworkImage(path!) as ImageProvider
+              : AssetImage(path!) as ImageProvider)
+          : null,
+      child: (path == null || path!.isEmpty) 
+          ? Icon(Icons.person, color: AppTheme.secondaryText, size: radius) 
+          : null,
+    );
+  }
+}

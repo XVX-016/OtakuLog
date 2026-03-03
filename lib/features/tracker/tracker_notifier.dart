@@ -90,34 +90,6 @@ class TrackerNotifier extends StateNotifier<AsyncValue<void>> {
     });
   }
 }
-
 final trackerNotifierProvider = StateNotifierProvider<TrackerNotifier, AsyncValue<void>>((ref) {
   return TrackerNotifier(ref);
-});
-
-final libraryAnimeProvider = FutureProvider<List<AnimeEntity>>((ref) {
-  return ref.watch(animeRepositoryProvider).getAllAnime();
-});
-
-final libraryMangaProvider = FutureProvider<List<MangaEntity>>((ref) {
-  return ref.watch(mangaRepositoryProvider).getAllManga();
-});
-
-final recentSessionsProvider = FutureProvider<List<UserSessionEntity>>((ref) {
-  return ref.watch(sessionRepositoryProvider).getAllSessions();
-});
-
-final combinedLibraryProvider = FutureProvider<List<TrackableContent>>((ref) async {
-  final animes = await ref.watch(libraryAnimeProvider.future);
-  final mangas = await ref.watch(libraryMangaProvider.future);
-  
-  final combined = <TrackableContent>[...animes, ...mangas];
-  // Sort by updatedAt descending
-  combined.sort((a, b) {
-    DateTime aTime = (a is AnimeEntity) ? a.updatedAt : (a as MangaEntity).updatedAt;
-    DateTime bTime = (b is AnimeEntity) ? b.updatedAt : (b as MangaEntity).updatedAt;
-    return bTime.compareTo(aTime);
-  });
-  
-  return combined;
 });

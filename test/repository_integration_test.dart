@@ -34,6 +34,7 @@ void main() {
         totalEpisodes: 12,
         currentEpisode: 0,
         status: AnimeStatus.watching,
+        genres: ['Action', 'Sci-Fi'],
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );

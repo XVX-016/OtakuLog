@@ -5,6 +5,8 @@ import 'package:goon_tracker/domain/entities/trackable_content.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/app/providers.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ContentPreviewSheet extends ConsumerStatefulWidget {
   final TrackableContent content;

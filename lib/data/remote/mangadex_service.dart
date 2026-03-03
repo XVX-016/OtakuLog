@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
+import 'package:goon_tracker/data/mappers/manga_mapper.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
 
 class MangadexService {
   final Dio _dio = Dio(BaseOptions(baseUrl: 'https://api.mangadex.org'));
+  final Map<String, int> _chapterCountCache = {};
 
   Future<List<MangaEntity>> searchManga(String query, bool isAdult) async {
     if (query.isEmpty) {
