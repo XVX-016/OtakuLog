@@ -30,8 +30,6 @@ dart run build_runner build --delete-conflicting-outputs
 flutter run -d windows
 
 # Android (debug, with device/emulator connected)
-flutter run -d android
-
 # iOS (debug, macOS only)
 flutter run -d ios
 
