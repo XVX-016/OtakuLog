@@ -2,15 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:goon_tracker/app/providers.dart';
 import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
 import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/search/search_notifier.dart';
 import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
-import 'package:cached_network_image/cached_network_image.dart';
+import 'package:goon_tracker/features/search/models/search_filters.dart';
+import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:goon_tracker/features/search/search_notifier.dart';
+import 'package:goon_tracker/features/search/widgets/search_filter_sheet.dart';
+import 'package:goon_tracker/features/search/widgets/search_result_card.dart';
 import 'package:shimmer/shimmer.dart';
-
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -21,45 +20,51 @@ class SearchScreen extends ConsumerStatefulWidget {
 
 class _SearchScreenState extends ConsumerState<SearchScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  bool _seededDiscover = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
+    _scrollController.dispose();
     _searchController.dispose();
     super.dispose();
   }
 
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final position = _scrollController.position;
+    if (position.pixels >= position.maxScrollExtent - 300) {
+      ref.read(searchNotifierProvider.notifier).loadMore();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final searchState = ref.watch(searchStateProvider);
-    final searchResults = ref.watch(searchResultsProvider(searchState.type));
+    final state = ref.watch(searchNotifierProvider);
+    final libraryIds = ref.watch(combinedLibraryProvider).maybeWhen(
+          data: (items) => items.map((item) => item.id).toSet(),
+          orElse: () => <String>{},
+        );
+    _ensureInitialDiscover(state);
 
     return Scaffold(
       body: SafeArea(
         child: Column(
           children: [
-            _buildSearchBar(context, ref, searchState),
-            _buildFilters(context, ref, searchState),
+            _buildTopBar(context, state),
+            _buildMediumRow(state),
             Expanded(
-              child: searchResults.when(
-                data: (results) => _buildResultsList(results, _searchController.text.isEmpty),
-                loading: () => _buildLoadingSkeleton(),
-                error: (e, st) => Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red, size: 48),
-                      const SizedBox(height: 16),
-                      Text('System Failure: $e', style: const TextStyle(color: AppTheme.secondaryText)),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () => ref.invalidate(searchResultsProvider(searchState.type)),
-                        style: ElevatedButton.styleFrom(backgroundColor: AppTheme.elevated),
-                        child: const Text('RETRY INITIALIZATION'),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              child: state.isLoading && state.results.isEmpty
+                  ? _buildLoading()
+                  : state.errorMessage != null && state.results.isEmpty
+                      ? _buildError(state.errorMessage!)
+                      : _buildResults(state, libraryIds),
             ),
           ],
         ),
@@ -67,85 +72,136 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildSearchBar(BuildContext context, WidgetRef ref, SearchState searchState) {
+  Widget _buildTopBar(BuildContext context, SearchState state) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppTheme.elevated,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: Colors.white.withOpacity(0.05)),
-        ),
-        child: TextField(
-          controller: _searchController,
-          style: const TextStyle(color: AppTheme.primaryText),
-          decoration: InputDecoration(
-            hintText: 'Search for ${searchState.type.name}...',
-            prefixIcon: const Icon(Icons.search, color: AppTheme.secondaryText),
-            border: InputBorder.none,
-            enabledBorder: InputBorder.none,
-            focusedBorder: InputBorder.none,
-            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-          ),
-          onChanged: (value) {
-            ref.read(searchResultsProvider(searchState.type).notifier).onQueryChanged(value);
-          },
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFilters(BuildContext context, WidgetRef ref, SearchState state) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Row(
         children: [
-          _buildFilterChip('ANIME', state.type == SearchType.anime, () {
-            if (state.type != SearchType.anime) {
-              _searchController.clear();
-              ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.anime);
-              ref.invalidate(searchResultsProvider(SearchType.anime));
-            }
-          }),
-          const SizedBox(width: 8),
-          _buildFilterChip('MANGA', state.type == SearchType.manga, () {
-            if (state.type != SearchType.manga) {
-              _searchController.clear();
-              ref.read(searchStateProvider.notifier).state = state.copyWith(type: SearchType.manga);
-              ref.invalidate(searchResultsProvider(SearchType.manga));
-            }
-          }),
-          const Spacer(),
-          const Text('18+', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: AppTheme.secondaryText)),
-          const SizedBox(width: 4),
-          Switch.adaptive(
-            value: state.isAdult,
-            activeColor: AppTheme.accent,
-            onChanged: (val) {
-              ref.read(searchStateProvider.notifier).state = state.copyWith(isAdult: val);
-              ref.invalidate(searchResultsProvider(state.type));
-            },
+          Expanded(
+            child: Container(
+              decoration: BoxDecoration(
+                color: AppTheme.elevated,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: Colors.white.withOpacity(0.05)),
+              ),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(color: AppTheme.primaryText),
+                decoration: InputDecoration(
+                  hintText: 'Search for ${state.filters.medium.name}...',
+                  prefixIcon:
+                      const Icon(Icons.search, color: AppTheme.secondaryText),
+                  suffixIcon: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (_searchController.text.isNotEmpty)
+                        IconButton(
+                          onPressed: () {
+                            _searchController.clear();
+                            ref
+                                .read(searchNotifierProvider.notifier)
+                                .submitQuery('');
+                            setState(() {});
+                          },
+                          icon: const Icon(Icons.close,
+                              color: AppTheme.secondaryText),
+                        ),
+                      IconButton(
+                        onPressed: () => ref
+                            .read(searchNotifierProvider.notifier)
+                            .submitQuery(_searchController.text),
+                        icon: const Icon(Icons.arrow_forward_rounded,
+                            color: AppTheme.primaryText),
+                      ),
+                    ],
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                ),
+                onChanged: (value) {
+                  setState(() {});
+                  ref
+                      .read(searchNotifierProvider.notifier)
+                      .onQueryChanged(value);
+                },
+                onSubmitted: (value) => ref
+                    .read(searchNotifierProvider.notifier)
+                    .submitQuery(value),
+              ),
+            ),
+          ),
+          const SizedBox(width: 10),
+          IconButton.filledTonal(
+            style: IconButton.styleFrom(
+              backgroundColor: AppTheme.elevated,
+              foregroundColor: AppTheme.primaryText,
+              fixedSize: const Size(52, 52),
+            ),
+            onPressed: () => _showFilters(context, state.filters),
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.tune_rounded),
+                if (state.filters.hasAdvancedFilters)
+                  const Positioned(
+                    right: -2,
+                    top: -2,
+                    child: CircleAvatar(
+                        radius: 4, backgroundColor: AppTheme.accent),
+                  ),
+              ],
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterChip(String label, bool selected, VoidCallback onTap) {
+  Widget _buildMediumRow(SearchState state) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Row(
+        children: [
+          _mediumChip(
+              SearchMedium.anime, state.filters.medium == SearchMedium.anime),
+          const SizedBox(width: 8),
+          _mediumChip(
+              SearchMedium.manga, state.filters.medium == SearchMedium.manga),
+          const Spacer(),
+          if (state.filters.hasAdvancedFilters)
+            Flexible(
+              child: Text(
+                _activeFilterSummary(state.filters),
+                style: const TextStyle(
+                  color: AppTheme.secondaryText,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w600,
+                ),
+                textAlign: TextAlign.right,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _mediumChip(SearchMedium medium, bool selected) {
     return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(20),
+      onTap: () => ref.read(searchNotifierProvider.notifier).setMedium(medium),
+      borderRadius: BorderRadius.circular(999),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? AppTheme.accent : AppTheme.elevated,
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(999),
         ),
         child: Text(
-          label,
+          medium == SearchMedium.anime ? 'ANIME' : 'MANGA',
           style: TextStyle(
             color: selected ? AppTheme.primaryText : AppTheme.secondaryText,
-            fontSize: 12,
             fontWeight: FontWeight.bold,
           ),
         ),
@@ -153,38 +209,59 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildResultsList(List<TrackableContent> results, bool isTrending) {
-    if (results.isEmpty) {
+  Widget _buildResults(SearchState state, Set<String> libraryIds) {
+    if (state.results.isEmpty) {
+      if (_isOfflineMessage(state.errorMessage)) {
+        return _buildError(state.errorMessage!);
+      }
       return GTEmptyState(
-        icon: Icons.sentiment_dissatisfied,
-        title: 'No results found',
-        description: 'Try searching for something else or adjusting your filters.',
+        icon: Icons.explore_outlined,
+        title: state.query.trim().isEmpty
+            ? 'Nothing to discover yet'
+            : 'No results found',
+        description: state.query.trim().isEmpty
+            ? 'Try changing your filters or switching medium.'
+            : 'Adjust filters, switch medium, or try a different title.',
       );
     }
-    
+
+    final results = state.results
+        .map((item) => item.copyWith(inLibrary: libraryIds.contains(item.id)))
+        .toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (isTrending)
-          const Padding(
-            padding: EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Text(
-              'TRENDING NOW',
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 1.2,
-                color: AppTheme.secondaryText,
-              ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          child: Text(
+            state.query.trim().isEmpty ? 'DISCOVER' : 'RESULTS',
+            style: const TextStyle(
+              color: AppTheme.secondaryText,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.2,
             ),
           ),
+        ),
         Expanded(
           child: ListView.builder(
-            itemCount: results.length,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            controller: _scrollController,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+            itemCount: results.length + (state.isLoadingMore ? 1 : 0),
             itemBuilder: (context, index) {
+              if (index == results.length) {
+                return const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              }
+
               final item = results[index];
-              return _buildResultCard(context, item);
+              return SearchResultCard(
+                item: item,
+                onTap: () => _showPreview(context, item),
+              );
             },
           ),
         ),
@@ -192,65 +269,50 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  Widget _buildResultCard(BuildContext context, TrackableContent item) {
-    return InkWell(
-      onTap: () => _showPreview(context, item),
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        height: 120,
-        child: Row(
+  Widget _buildLoading() {
+    return ListView.builder(
+      itemCount: 6,
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+      itemBuilder: (context, index) => Shimmer.fromColors(
+        baseColor: AppTheme.elevated,
+        highlightColor: AppTheme.surface,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          height: 152,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(18),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildError(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: CachedNetworkImage(
-                imageUrl: item.coverImage,
-                width: 85,
-                height: 120,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Shimmer.fromColors(
-                  baseColor: AppTheme.elevated,
-                  highlightColor: AppTheme.surface,
-                  child: Container(color: Colors.white, width: 85, height: 120),
-                ),
-                errorWidget: (context, url, error) => Container(
-                  color: AppTheme.elevated,
-                  width: 85,
-                  height: 120,
-                  child: const Icon(Icons.broken_image, color: AppTheme.secondaryText, size: 20),
-                ),
-              ),
+            Icon(
+              _isOfflineMessage(message)
+                  ? Icons.wifi_off_rounded
+                  : Icons.error_outline,
+              color: _isOfflineMessage(message) ? Colors.orange : Colors.red,
+              size: 48,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    item.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item is AnimeEntity ? 'Anime • ${item.totalEpisodes} eps' : 'Manga • ${item.totalProgress} chapters',
-                    style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
-                  ),
-                  const SizedBox(height: 8),
-                  if (item.genres.isNotEmpty)
-                    Text(
-                      item.genres.take(3).join(' • '),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(color: AppTheme.accent.withOpacity(0.8), fontSize: 11, fontWeight: FontWeight.bold),
-                    ),
-                ],
-              ),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: const TextStyle(color: AppTheme.secondaryText),
+              textAlign: TextAlign.center,
             ),
-            IconButton(
-              icon: const Icon(Icons.chevron_right, color: AppTheme.secondaryText),
-              onPressed: () => _showPreview(context, item),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () =>
+                  ref.read(searchNotifierProvider.notifier).retry(),
+              child: const Text('RETRY'),
             ),
           ],
         ),
@@ -258,52 +320,69 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
-  void _showPreview(BuildContext context, TrackableContent item) {
+  Future<void> _showFilters(BuildContext context, SearchFilters filters) async {
+    final nextFilters = await showModalBottomSheet<SearchFilters>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => SearchFilterSheet(initialFilters: filters),
+    );
+
+    if (nextFilters != null) {
+      await ref
+          .read(searchNotifierProvider.notifier)
+          .updateFilters(nextFilters);
+    }
+  }
+
+  void _showPreview(BuildContext context, SearchResultItem item) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => ContentPreviewSheet(content: item),
+      builder: (context) => ContentPreviewSheet(searchItem: item),
     );
   }
 
+  void _ensureInitialDiscover(SearchState state) {
+    if (_seededDiscover ||
+        state.isLoading ||
+        state.results.isNotEmpty ||
+        state.errorMessage != null ||
+        state.currentPage > 0) {
+      return;
+    }
+    _seededDiscover = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(searchNotifierProvider.notifier).refresh();
+    });
+  }
 
-  Future<void> _addToLibrary(BuildContext context, TrackableContent item) async {
-    try {
-      if (item is AnimeEntity) {
-        await ref.read(animeRepositoryProvider).saveAnime(item);
-      } else if (item is MangaEntity) {
-        await ref.read(mangaRepositoryProvider).saveManga(item);
-      }
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Added ${item.title} to Library')),
-        );
-      }
-    } catch (e) {
-       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
+  String _activeFilterSummary(SearchFilters filters) {
+    final pieces = <String>[
+      if (filters.adultMode != AdultMode.off) _adultLabel(filters.adultMode),
+      if (filters.status != ContentStatusFilter.any) filters.status.name,
+      if (filters.sort != SearchSort.trending) filters.sort.name,
+      if (filters.includedTags.isNotEmpty)
+        '${filters.includedTags.length} tags',
+    ];
+    return pieces.join(' | ');
+  }
+
+  String _adultLabel(AdultMode mode) {
+    switch (mode) {
+      case AdultMode.off:
+        return 'Off';
+      case AdultMode.mixed:
+        return 'Mixed';
+      case AdultMode.explicitOnly:
+        return 'Explicit';
     }
   }
-  Widget _buildLoadingSkeleton() {
-    return ListView.builder(
-      itemCount: 6,
-      padding: const EdgeInsets.all(16),
-      itemBuilder: (context, index) => Shimmer.fromColors(
-        baseColor: AppTheme.elevated,
-        highlightColor: AppTheme.surface,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          height: 120,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-    );
+
+  bool _isOfflineMessage(String? message) {
+    if (message == null) return false;
+    return message.toLowerCase().contains('no network');
   }
 }

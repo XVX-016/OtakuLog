@@ -3,7 +3,6 @@ import 'package:isar/isar.dart';
 import 'package:goon_tracker/data/models/anime_model.dart';
 import 'package:goon_tracker/data/repositories/anime_repository_impl.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 void main() {

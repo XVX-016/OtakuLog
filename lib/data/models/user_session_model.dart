@@ -6,6 +6,9 @@ part 'user_session_model.g.dart';
 class UserSessionModel {
   Id id = Isar.autoIncrement;
 
+  @Index(unique: true, replace: true)
+  String? localId;
+
   @Index()
   late String contentId;
   

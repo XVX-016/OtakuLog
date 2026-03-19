@@ -1,0 +1,833 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:goon_tracker/app/providers.dart';
+import 'package:goon_tracker/app/theme.dart';
+import 'package:goon_tracker/data/remote/backup_mapper.dart';
+import 'package:goon_tracker/features/cloud/models/backup_payload.dart';
+import 'package:goon_tracker/features/cloud/models/cloud_availability_state.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+class SettingsScreen extends ConsumerStatefulWidget {
+  const SettingsScreen({super.key});
+
+  @override
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+  final _nameController = TextEditingController();
+  final _chapterController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  String _adultMode = 'off';
+  String _searchMedium = 'anime';
+  bool _blurCovers = false;
+  bool _notificationsEnabled = true;
+  bool _initialized = false;
+  bool _isSaving = false;
+  bool _isSigningIn = false;
+  bool _isSigningUp = false;
+  bool _isBackingUp = false;
+  bool _isRestoring = false;
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _chapterController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final userAsync = ref.watch(currentUserProvider);
+    final prefsAsync = ref.watch(retentionPreferencesProvider);
+    final authUser = ref.watch(authUserProvider);
+    final cloudState = ref.watch(cloudAvailabilityProvider);
+    final backupPreviewAsync = ref.watch(remoteBackupPreviewProvider);
+    final packageInfoAsync = ref.watch(packageInfoProvider);
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('SETTINGS')),
+      body: userAsync.when(
+        data: (user) {
+          if (user == null) {
+            return const Center(
+              child: Text('No profile found yet.',
+                  style: TextStyle(color: AppTheme.secondaryText)),
+            );
+          }
+          _seed(user, prefsAsync.valueOrNull);
+
+          return ListView(
+            padding: const EdgeInsets.all(24),
+            children: [
+              _label('Profile'),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _nameController,
+                style: const TextStyle(color: AppTheme.primaryText),
+                decoration: _decoration('Display name'),
+              ),
+              const SizedBox(height: 20),
+              _label('Defaults'),
+              const SizedBox(height: 10),
+              _dropdown<String>(
+                value: _searchMedium,
+                items: const ['anime', 'manga', 'both'],
+                onChanged: (value) => setState(() => _searchMedium = value!),
+              ),
+              const SizedBox(height: 12),
+              _dropdown<String>(
+                value: _adultMode,
+                items: const ['off', 'mixed', 'explicitOnly'],
+                onChanged: (value) => setState(() => _adultMode = value!),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _chapterController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: AppTheme.primaryText),
+                decoration: _decoration('Average minutes per chapter'),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _blurCovers,
+                activeThumbColor: AppTheme.accent,
+                title: const Text('Blur covers in public mode',
+                    style: TextStyle(color: AppTheme.primaryText)),
+                subtitle: const Text(
+                  'Hide covers in shared or public-facing moments.',
+                  style: TextStyle(color: AppTheme.secondaryText),
+                ),
+                onChanged: (value) => setState(() => _blurCovers = value),
+              ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _notificationsEnabled,
+                activeThumbColor: AppTheme.accent,
+                title: const Text('Enable reminders',
+                    style: TextStyle(color: AppTheme.primaryText)),
+                subtitle: const Text(
+                  'Allow one local reminder on inactive days.',
+                  style: TextStyle(color: AppTheme.secondaryText),
+                ),
+                onChanged: (value) =>
+                    setState(() => _notificationsEnabled = value),
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: _isSaving ? null : () => _save(user),
+                child: Text(_isSaving ? 'SAVING...' : 'SAVE SETTINGS'),
+              ),
+              const SizedBox(height: 32),
+              _label('Cloud Status'),
+              const SizedBox(height: 10),
+              _cloudStatusCard(cloudState),
+              const SizedBox(height: 24),
+              _label('Account'),
+              const SizedBox(height: 10),
+              if (cloudState == CloudAvailabilityState.disabledMissingConfig)
+                _infoCard(
+                  'Cloud is disabled',
+                  'Add SUPABASE_URL and SUPABASE_ANON_KEY to your local .env file to enable backup.',
+                )
+              else if (authUser == null)
+                _authCard()
+              else
+                _signedInCard(authUser.email ?? 'Signed in'),
+              const SizedBox(height: 24),
+              _label('Backup & Restore'),
+              const SizedBox(height: 10),
+              _backupCard(
+                cloudState: cloudState,
+                lastBackupAt: prefsAsync.valueOrNull?.lastBackupAt,
+                backupPreviewAsync: backupPreviewAsync,
+              ),
+              const SizedBox(height: 24),
+              _label('About'),
+              const SizedBox(height: 10),
+              _aboutCard(packageInfoAsync),
+            ],
+          );
+        },
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, _) => Center(
+          child: Text('Error: $error',
+              style: const TextStyle(color: AppTheme.secondaryText)),
+        ),
+      ),
+    );
+  }
+
+  Widget _cloudStatusCard(CloudAvailabilityState state) {
+    final (title, subtitle) = switch (state) {
+      CloudAvailabilityState.disabledMissingConfig => (
+          'Local-only mode',
+          'Cloud is not configured in this build. Your tracker still works fully offline.',
+        ),
+      CloudAvailabilityState.signedOut => (
+          'Cloud ready',
+          'Sign in to back up your data. Your tracker stays local. Backup is optional.',
+        ),
+      CloudAvailabilityState.ready => (
+          'Cloud connected',
+          'You are signed in and can back up or restore data.',
+        ),
+      CloudAvailabilityState.degradedOffline => (
+          'Cloud degraded',
+          'Cloud features are temporarily unavailable. Local tracking still works.',
+        ),
+    };
+    return _infoCard(title, subtitle);
+  }
+
+  Widget _authCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Sign in to back up your data',
+            style: TextStyle(
+                color: AppTheme.primaryText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Your tracker stays local. Backup is optional.',
+            style: TextStyle(color: AppTheme.secondaryText),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            style: const TextStyle(color: AppTheme.primaryText),
+            decoration: _decoration('Email'),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _passwordController,
+            obscureText: true,
+            style: const TextStyle(color: AppTheme.primaryText),
+            decoration: _decoration('Password'),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: _isSigningIn ? null : _signIn,
+                  child: Text(_isSigningIn ? 'SIGNING IN...' : 'SIGN IN'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: _isSigningUp ? null : _signUp,
+                  child: Text(_isSigningUp ? 'CREATING...' : 'SIGN UP'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _signedInCard(String email) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Signed in',
+            style: TextStyle(
+                color: AppTheme.primaryText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          Text(email, style: const TextStyle(color: AppTheme.secondaryText)),
+          const SizedBox(height: 6),
+          const Text(
+            'Signing out will not erase your local data.',
+            style: TextStyle(color: AppTheme.secondaryText),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              onPressed: _signOut,
+              child: const Text('SIGN OUT'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _backupCard({
+    required CloudAvailabilityState cloudState,
+    required DateTime? lastBackupAt,
+    required AsyncValue<BackupPreview?> backupPreviewAsync,
+  }) {
+    final canUseBackup = cloudState == CloudAvailabilityState.ready;
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Manual Cloud Backup',
+            style: TextStyle(
+                color: AppTheme.primaryText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            lastBackupAt == null
+                ? 'No successful backup yet.'
+                : 'Last backup: ${DateFormat('MMM d, yyyy - h:mm a').format(lastBackupAt)}',
+            style: const TextStyle(color: AppTheme.secondaryText),
+          ),
+          const SizedBox(height: 12),
+          backupPreviewAsync.when(
+            data: (preview) {
+              if (preview == null) {
+                return const Text('No cloud backup found yet.',
+                    style: TextStyle(color: AppTheme.secondaryText));
+              }
+              return Text(
+                'Cloud backup from ${DateFormat('MMM d, yyyy').format(preview.exportedAt)} - ${preview.libraryCount} items - ${preview.sessionsCount} sessions',
+                style: const TextStyle(color: AppTheme.secondaryText),
+              );
+            },
+            loading: () => const SizedBox.shrink(),
+            error: (_, __) => const Text('Cloud preview unavailable.',
+                style: TextStyle(color: AppTheme.secondaryText)),
+          ),
+          const SizedBox(height: 16),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: canUseBackup && !_isBackingUp ? _backupNow : null,
+                  child: Text(_isBackingUp ? 'BACKING UP...' : 'BACKUP NOW'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton(
+                  onPressed:
+                      canUseBackup && !_isRestoring ? _restoreData : null,
+                  child: Text(_isRestoring ? 'RESTORING...' : 'RESTORE DATA'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _aboutCard(AsyncValue<dynamic> packageInfoAsync) {
+    final versionText = packageInfoAsync.valueOrNull == null
+        ? 'Version unavailable'
+        : '${packageInfoAsync.value.version} (${packageInfoAsync.value.buildNumber})';
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'OtakuLog',
+            style: TextStyle(
+                color: AppTheme.primaryText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 6),
+          GestureDetector(
+            onLongPress: () => context.push('/debug/analytics'),
+            child: Text(versionText,
+                style: const TextStyle(color: AppTheme.secondaryText)),
+          ),
+          const SizedBox(height: 10),
+          const Text(
+            'A local-first anime and manga tracker with quick logging, wrapped stats, and optional cloud backup.',
+            style: TextStyle(color: AppTheme.secondaryText, height: 1.5),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Privacy: your tracker works locally first. Cloud backup is optional and only used when you sign in.',
+            style: TextStyle(color: AppTheme.secondaryText, height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: _sendFeedback,
+            icon: const Icon(Icons.mail_outline),
+            label: const Text('SEND FEEDBACK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _infoCard(String title, String subtitle) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: const TextStyle(
+                  color: AppTheme.primaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold)),
+          const SizedBox(height: 6),
+          Text(subtitle, style: const TextStyle(color: AppTheme.secondaryText)),
+        ],
+      ),
+    );
+  }
+
+  void _seed(dynamic user, dynamic prefs) {
+    if (_initialized) return;
+    _nameController.text = user.displayName;
+    _chapterController.text = user.avgChapterMinutes.toString();
+    _adultMode = user.defaultAdultMode;
+    _searchMedium = user.defaultSearchMedium;
+    _blurCovers = user.blurCoverInPublic;
+    _notificationsEnabled = prefs?.notificationsEnabled ?? true;
+    _initialized = true;
+  }
+
+  Future<void> _save(dynamic user) async {
+    setState(() => _isSaving = true);
+    try {
+      final savedUser = user.copyWith(
+        name: _nameController.text.trim().isEmpty
+            ? user.name
+            : _nameController.text.trim(),
+        updatedAt: DateTime.now(),
+        defaultSearchType: _searchMedium,
+        defaultContentRating: _adultMode,
+        defaultMangaReadTime: int.tryParse(_chapterController.text.trim()) ??
+            user.defaultMangaReadTime,
+        filter18Plus: _blurCovers,
+      );
+      await ref.read(userRepositoryProvider).saveUser(savedUser);
+
+      final prefs = await ref.read(retentionPreferencesProvider.future);
+      await ref.read(retentionPreferencesServiceProvider).save(
+            prefs.copyWith(
+              notificationsEnabled: _notificationsEnabled,
+              lastAppOpenedAtIso: DateTime.now().toIso8601String(),
+            ),
+          );
+
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(retentionPreferencesProvider);
+      ref.invalidate(searchDefaultsProvider);
+      ref.invalidate(retentionReminderProvider);
+
+      _showMessage('Settings updated');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<void> _signUp() async {
+    if (!_validateAuthInputs()) return;
+    setState(() => _isSigningUp = true);
+    try {
+      await ref.read(authServiceProvider).signUp(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      ref.invalidate(authSessionProvider);
+      _showMessage(
+          'Account created. Check your inbox if email confirmation is enabled.');
+    } catch (error) {
+      ref.read(cloudDegradedProvider.notifier).state = _isOfflineError(error);
+      _showMessage(_friendlyError(error));
+    } finally {
+      if (mounted) setState(() => _isSigningUp = false);
+    }
+  }
+
+  Future<void> _signIn() async {
+    if (!_validateAuthInputs()) return;
+    setState(() => _isSigningIn = true);
+    try {
+      await ref.read(authServiceProvider).signIn(
+            email: _emailController.text.trim(),
+            password: _passwordController.text,
+          );
+      ref.read(cloudDegradedProvider.notifier).state = false;
+      ref.invalidate(authSessionProvider);
+      _showMessage('Signed in');
+    } catch (error) {
+      ref.read(cloudDegradedProvider.notifier).state = _isOfflineError(error);
+      _showMessage(_friendlyError(error));
+    } finally {
+      if (mounted) setState(() => _isSigningIn = false);
+    }
+  }
+
+  Future<void> _signOut() async {
+    try {
+      await ref.read(authServiceProvider).signOut();
+      ref.read(cloudDegradedProvider.notifier).state = false;
+      ref.invalidate(authSessionProvider);
+      ref.invalidate(remoteBackupPreviewProvider);
+      _showMessage('Signed out');
+    } catch (error) {
+      _showMessage(_friendlyError(error));
+    }
+  }
+
+  Future<void> _backupNow() async {
+    setState(() => _isBackingUp = true);
+    try {
+      final profile = await ref.read(currentUserProvider.future);
+      final library = await ref.read(combinedLibraryProvider.future);
+      final sessions = await ref.read(allSessionsProvider.future);
+      final result = await ref.read(syncServiceProvider).pushLocalToRemote(
+            profile: profile,
+            library: library,
+            sessions: sessions,
+          );
+      if (result.success) {
+        await ref.read(localAnalyticsServiceProvider).track('backup_now');
+        ref.invalidate(analyticsSnapshotProvider);
+      }
+      ref.read(cloudDegradedProvider.notifier).state = !result.success &&
+          (result.message.toLowerCase().contains('internet') ||
+              result.message.toLowerCase().contains('socket'));
+      ref.invalidate(retentionPreferencesProvider);
+      ref.invalidate(remoteBackupPreviewProvider);
+      _showMessage(result.message);
+    } finally {
+      if (mounted) setState(() => _isBackingUp = false);
+    }
+  }
+
+  Future<void> _restoreData() async {
+    final remote = await ref.read(syncServiceProvider).previewRemoteBackup();
+    if (remote == null) {
+      _showMessage('No backup found');
+      return;
+    }
+    if (!mounted) {
+      return;
+    }
+    final preview = ref.read(backupMapperProvider).buildPreview(remote.payload);
+    if (remote.payload.schemaVersion > BackupPayload.currentSchemaVersion) {
+      _showMessage('This backup was created by a newer app version.');
+      return;
+    }
+
+    final mode = await showModalBottomSheet<RestoreMode>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (sheetContext) => SafeArea(
+        top: false,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+          decoration: const BoxDecoration(
+            color: AppTheme.surface,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Restore your data',
+                style: TextStyle(
+                    color: AppTheme.primaryText,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              const Text(
+                'Choose how to apply your cloud backup to this device.',
+                style: TextStyle(color: AppTheme.secondaryText),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Backup from ${DateFormat('MMM d, yyyy - h:mm a').format(preview.exportedAt)}\n'
+                '- ${preview.libraryCount} library items\n'
+                '- ${preview.sessionsCount} sessions\n'
+                '- Display name: ${preview.profileName ?? 'Unknown'}',
+                style:
+                    const TextStyle(color: AppTheme.primaryText, height: 1.5),
+              ),
+              const SizedBox(height: 18),
+              _restoreOption(
+                title: 'Merge with current data',
+                subtitle:
+                    'Recommended. Keeps this device data and combines it with the backup.',
+                onTap: () => Navigator.pop(sheetContext, RestoreMode.merge),
+              ),
+              const SizedBox(height: 10),
+              _restoreOption(
+                title: 'Replace local data',
+                subtitle:
+                    'Erases current device data and restores only the cloud backup.',
+                destructive: true,
+                onTap: () =>
+                    Navigator.pop(sheetContext, RestoreMode.replaceLocal),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (mode == null) return;
+    if (!mounted) {
+      return;
+    }
+    if (mode == RestoreMode.replaceLocal) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: const Text('Replace local data?'),
+          content: const Text(
+              'This will overwrite local profile data, library items, sessions, and retention preferences on this device.'),
+          actions: [
+            TextButton(
+                onPressed: () => Navigator.pop(dialogContext, false),
+                child: const Text('Cancel')),
+            ElevatedButton(
+                onPressed: () => Navigator.pop(dialogContext, true),
+                child: const Text('Replace')),
+          ],
+        ),
+      );
+      if (confirmed != true) return;
+    }
+
+    setState(() => _isRestoring = true);
+    try {
+      final result =
+          await ref.read(syncServiceProvider).pullRemoteToLocal(mode: mode);
+      if (result.success) {
+        await ref.read(localAnalyticsServiceProvider).track(
+              mode == RestoreMode.merge
+                  ? 'restore_merge'
+                  : 'restore_replace_local',
+            );
+        ref.invalidate(analyticsSnapshotProvider);
+      }
+      ref.read(cloudDegradedProvider.notifier).state = !result.success &&
+          (result.message.toLowerCase().contains('internet') ||
+              result.message.toLowerCase().contains('socket'));
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(retentionPreferencesProvider);
+      ref.invalidate(combinedLibraryProvider);
+      ref.invalidate(allSessionsProvider);
+      ref.invalidate(recentSessionsProvider);
+      ref.invalidate(latestSessionByContentProvider);
+      ref.invalidate(activityTimelineProvider);
+      ref.invalidate(dailyActivityProvider);
+      ref.invalidate(userPreferenceProfileProvider);
+      ref.invalidate(recommendationsProvider);
+      ref.invalidate(weeklyWrappedProvider);
+      ref.invalidate(monthlyWrappedProvider);
+      ref.invalidate(wrappedPromptProvider);
+      ref.invalidate(remoteBackupPreviewProvider);
+      _showMessage(result.message);
+    } finally {
+      if (mounted) setState(() => _isRestoring = false);
+    }
+  }
+
+  Future<void> _sendFeedback() async {
+    final packageInfo = await ref.read(packageInfoProvider.future);
+    final authUser = ref.read(authUserProvider);
+    final user = await ref.read(currentUserProvider.future);
+    final subject =
+        Uri.encodeComponent('OtakuLog feedback ${packageInfo.version}');
+    final body = Uri.encodeComponent(
+      'App version: ${packageInfo.version} (${packageInfo.buildNumber})\n'
+      'Profile: ${user?.displayName ?? 'Unknown'}\n'
+      'Signed in: ${authUser?.email ?? 'No'}\n\n'
+      'What works well?\n\n'
+      'What feels confusing?\n\n'
+      'What would you add?\n',
+    );
+    final mailto = Uri.parse('mailto:?subject=$subject&body=$body');
+
+    if (await canLaunchUrl(mailto)) {
+      await launchUrl(mailto);
+      return;
+    }
+
+    await Clipboard.setData(
+      ClipboardData(
+        text:
+            'OtakuLog feedback ${packageInfo.version}\n\nWhat works well?\n\nWhat feels confusing?\n\nWhat would you add?\n',
+      ),
+    );
+    if (!mounted) {
+      return;
+    }
+    _showMessage('No mail app found. Feedback template copied to clipboard.');
+  }
+
+  Widget _restoreOption({
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    bool destructive = false,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppTheme.elevated,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: destructive
+                  ? Colors.redAccent.withValues(alpha: 0.3)
+                  : Colors.white10),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: TextStyle(
+                color: destructive ? Colors.redAccent : AppTheme.primaryText,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(subtitle,
+                style: const TextStyle(color: AppTheme.secondaryText)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _validateAuthInputs() {
+    if (_emailController.text.trim().isEmpty ||
+        _passwordController.text.isEmpty) {
+      _showMessage('Enter both email and password');
+      return false;
+    }
+    return true;
+  }
+
+  bool _isOfflineError(Object error) {
+    final message = error.toString().toLowerCase();
+    return message.contains('socket') ||
+        message.contains('network') ||
+        message.contains('internet');
+  }
+
+  String _friendlyError(Object error) {
+    final message = error.toString();
+    if (message.contains('AuthRetryableFetchException')) {
+      return 'Could not reach Supabase. Check your internet connection.';
+    }
+    return message.replaceFirst('Exception: ', '');
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(message), behavior: SnackBarBehavior.floating),
+    );
+  }
+
+  Widget _label(String value) {
+    return Text(
+      value.toUpperCase(),
+      style: const TextStyle(
+        color: AppTheme.secondaryText,
+        fontSize: 11,
+        fontWeight: FontWeight.bold,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+
+  InputDecoration _decoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: AppTheme.surface,
+      border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+    );
+  }
+
+  Widget _dropdown<T>({
+    required T value,
+    required List<T> items,
+    required ValueChanged<T?> onChanged,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+          color: AppTheme.surface, borderRadius: BorderRadius.circular(14)),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          isExpanded: true,
+          dropdownColor: AppTheme.surface,
+          items: items
+              .map((item) => DropdownMenuItem<T>(
+                    value: item,
+                    child: Text(item.toString(),
+                        style: const TextStyle(color: AppTheme.primaryText)),
+                  ))
+              .toList(),
+          onChanged: onChanged,
+        ),
+      ),
+    );
+  }
+}

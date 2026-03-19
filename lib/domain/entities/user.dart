@@ -10,6 +10,12 @@ class UserEntity {
   final int defaultMangaReadTime;
   final bool filter18Plus;
 
+  String get displayName => name;
+  String get defaultSearchMedium => defaultSearchType;
+  String get defaultAdultMode => defaultContentRating == '10' ? 'off' : defaultContentRating;
+  int get avgChapterMinutes => defaultMangaReadTime;
+  bool get blurCoverInPublic => filter18Plus;
+
   UserEntity({
     required this.id,
     required this.name,

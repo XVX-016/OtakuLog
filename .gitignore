@@ -50,4 +50,12 @@ app.*.map.json
 # Temp/debug files
 build_debug_err.txt
 analyzer_output.txt
+isar.dll
+
+# Runtime env
+.env
+.env.admin
+/android/key.properties
+!/landing/
+!/landing/**
 

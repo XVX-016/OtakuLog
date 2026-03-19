@@ -9,7 +9,7 @@ class MangaEntity implements TrackableContent {
   final String title;
   @override
   final String coverImage;
-  
+
   final int totalChapters;
   final int currentChapter;
   final MangaStatus status;
@@ -20,7 +20,7 @@ class MangaEntity implements TrackableContent {
   @override
   final String? description;
   final bool isAdult;
-  
+
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
@@ -52,7 +52,10 @@ class MangaEntity implements TrackableContent {
     int? currentChapter,
     MangaStatus? status,
     double? rating,
+    List<String>? genres,
+    String? description,
     bool? isAdult,
+    DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return MangaEntity(
@@ -63,10 +66,10 @@ class MangaEntity implements TrackableContent {
       currentChapter: currentChapter ?? this.currentChapter,
       status: status ?? this.status,
       rating: rating ?? this.rating,
-      genres: genres,
+      genres: genres ?? this.genres,
       description: description ?? this.description,
       isAdult: isAdult ?? this.isAdult,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }

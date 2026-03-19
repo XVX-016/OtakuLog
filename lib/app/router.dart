@@ -1,25 +1,39 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:goon_tracker/app/providers.dart';
+import 'package:goon_tracker/features/details/anime_details_screen.dart';
+import 'package:goon_tracker/features/debug/analytics_debug_screen.dart';
+import 'package:goon_tracker/features/details/manga_details_screen.dart';
+import 'package:goon_tracker/features/activity_timeline_screen.dart';
 import 'package:goon_tracker/features/home/home_screen.dart';
 import 'package:goon_tracker/features/library/library_screen.dart';
+import 'package:goon_tracker/features/launch_gate_screen.dart';
+import 'package:goon_tracker/features/onboarding/onboarding_screen.dart';
 import 'package:goon_tracker/features/search/search_screen.dart';
+import 'package:goon_tracker/features/settings_v2_screen.dart';
 import 'package:goon_tracker/features/stats/stats_screen.dart';
-import 'package:goon_tracker/features/details/anime_details_screen.dart';
-import 'package:goon_tracker/features/details/manga_details_screen.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:goon_tracker/features/stats/wrapped_screen.dart';
+import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
 import 'package:goon_tracker/domain/entities/anime.dart';
 import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
-final GlobalKey<NavigatorState> _shellNavigatorKey = GlobalKey<NavigatorState>();
+final GlobalKey<NavigatorState> _shellNavigatorKey =
+    GlobalKey<NavigatorState>();
 
 final router = GoRouter(
-  initialLocation: '/',
+  initialLocation: '/launch',
   navigatorKey: _rootNavigatorKey,
   routes: [
+    GoRoute(
+      path: '/launch',
+      builder: (context, state) => const LaunchGateScreen(),
+    ),
+    GoRoute(
+      path: '/onboarding',
+      builder: (context, state) => const OnboardingScreen(),
+    ),
     ShellRoute(
       navigatorKey: _shellNavigatorKey,
       builder: (context, state, child) {
@@ -45,21 +59,62 @@ final router = GoRouter(
       ],
     ),
     GoRoute(
+      path: '/settings',
+      builder: (context, state) => const SettingsScreen(),
+    ),
+    GoRoute(
+      path: '/activity',
+      builder: (context, state) => const ActivityTimelineScreen(),
+    ),
+    GoRoute(
+      path: '/debug/analytics',
+      builder: (context, state) => const AnalyticsDebugScreen(),
+    ),
+    GoRoute(
+      path: '/wrapped',
+      builder: (context, state) {
+        final summary = state.extra as WrappedSummary;
+        return WrappedScreen(summary: summary);
+      },
+    ),
+    GoRoute(
       path: '/content/:id/:type',
       builder: (context, state) {
         final id = state.pathParameters['id']!;
         final type = state.pathParameters['type']!;
-        
+
         return Consumer(
           builder: (context, ref, child) {
             if (type == 'anime') {
-              final animeList = ref.watch(libraryAnimeProvider).value ?? [];
-              final anime = animeList.firstWhere((a) => a.id == id) as AnimeEntity;
-              return AnimeDetailScreen(anime: anime);
+              final animeList = ref.watch(libraryAnimeProvider).value;
+              AnimeEntity? anime;
+              if (animeList != null) {
+                for (final item in animeList.whereType<AnimeEntity>()) {
+                  if (item.id == id) {
+                    anime = item;
+                    break;
+                  }
+                }
+              }
+              return AnimeDetailScreen(
+                itemId: id,
+                cachedAnime: anime,
+              );
             } else {
-              final mangaList = ref.watch(libraryMangaProvider).value ?? [];
-              final manga = mangaList.firstWhere((m) => m.id == id) as MangaEntity;
-              return MangaDetailScreen(manga: manga);
+              final mangaList = ref.watch(libraryMangaProvider).value;
+              MangaEntity? manga;
+              if (mangaList != null) {
+                for (final item in mangaList.whereType<MangaEntity>()) {
+                  if (item.id == id) {
+                    manga = item;
+                    break;
+                  }
+                }
+              }
+              return MangaDetailScreen(
+                itemId: id,
+                cachedManga: manga,
+              );
             }
           },
         );

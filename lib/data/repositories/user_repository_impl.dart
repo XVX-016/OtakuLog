@@ -4,21 +4,6 @@ import 'package:goon_tracker/data/mappers/user_mapper.dart';
 import 'package:goon_tracker/domain/entities/user.dart';
 import 'package:goon_tracker/domain/repositories/user_repository.dart';
 
-extension on QueryBuilder<UserModel, UserModel, QFilterCondition> {
-  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'localId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-}
-
 class UserRepositoryImpl implements UserRepository {
   final Isar _isar;
 
@@ -34,7 +19,7 @@ class UserRepositoryImpl implements UserRepository {
   @override
   Future<bool> saveUser(UserEntity user) async {
     final model = UserMapper.toModel(user);
-    
+
     final existing = await _isar.userModels.filter().localIdEqualTo(user.id).findFirst();
     if (existing != null) {
       model.id = existing.id;

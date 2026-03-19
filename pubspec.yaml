@@ -23,6 +23,13 @@ dependencies:
   shimmer: any
   google_fonts: any
   graphql_flutter: any
+  share_plus: any
+  flutter_local_notifications: any
+  timezone: any
+  supabase_flutter: any
+  flutter_dotenv: any
+  package_info_plus: any
+  url_launcher: any
 
 dev_dependencies:
   flutter_test:
@@ -31,6 +38,24 @@ dev_dependencies:
   build_runner: any
   isar_generator: any
   mocktail: any
+  flutter_launcher_icons: any
+  flutter_native_splash: any
 
 flutter:
   uses-material-design: true
+  assets:
+    - .env
+    - assets/branding/
+
+flutter_launcher_icons:
+  android: true
+  image_path: assets/branding/otakulog_icon.png
+  adaptive_icon_background: "#0C0C10"
+  adaptive_icon_foreground: assets/branding/otakulog_icon.png
+
+flutter_native_splash:
+  color: "#0C0C10"
+  image: assets/branding/otakulog_icon.png
+  android_12:
+    color: "#0C0C10"
+    image: assets/branding/otakulog_icon.png

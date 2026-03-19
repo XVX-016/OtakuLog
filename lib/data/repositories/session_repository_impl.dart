@@ -46,16 +46,21 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<bool> deleteSession(String id) async {
-    final isarId = int.tryParse(id);
-    if (isarId != null) {
-      try {
-        return await isar.writeTxn(() async {
+    try {
+      final deleted = await isar.writeTxn(() async {
+        final byLocalId = await isar.userSessionModels.filter().localIdEqualTo(id).deleteAll();
+        if (byLocalId > 0) {
+          return true;
+        }
+        final isarId = int.tryParse(id);
+        if (isarId != null) {
           return await isar.userSessionModels.delete(isarId);
-        });
-      } catch (_) {
+        }
         return false;
-      }
+      });
+      return deleted;
+    } catch (_) {
+      return false;
     }
-    return false;
   }
 }

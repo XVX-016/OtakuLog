@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OtakuLog — Track What You Watch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --red: #E8354A;
+    --red-dim: #9b1f2e;
+    --bg: #0A0A0B;
+    --bg2: #111113;
+    --bg3: #18181C;
+    --border: rgba(255,255,255,0.07);
+    --text: #F0EDE8;
+    --muted: #6B6872;
+    --accent: #E8354A;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 300;
+    overflow-x: hidden;
+    cursor: default;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 100;
+    opacity: 0.6;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+    border-bottom: 1px solid transparent;
+    transition: border-color 0.3s, background 0.3s;
+  }
+  nav.scrolled {
+    background: rgba(10,10,11,0.92);
+    border-color: var(--border);
+    backdrop-filter: blur(12px);
+  }
+  .nav-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 28px;
+    letter-spacing: 2px;
+    color: var(--text);
+    text-decoration: none;
+  }
+  .nav-logo span { color: var(--red); }
+  .nav-links { display: flex; gap: 32px; align-items: center; }
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    letter-spacing: 0.5px;
+    transition: color 0.2s;
+  }
+  .nav-links a:hover { color: var(--text); }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: center;
+    padding: 120px 48px 80px;
+    gap: 80px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* big background text */
+  .hero::after {
+    content: 'OTAKU';
+    position: absolute;
+    bottom: -60px;
+    right: -20px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(140px, 22vw, 320px);
+    color: rgba(255,255,255,0.018);
+    letter-spacing: -4px;
+    pointer-events: none;
+    user-select: none;
+    line-height: 1;
+  }
+
+  .hero-left { position: relative; z-index: 2; }
+
+  .hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.1s forwards;
+  }
+  .hero-eyebrow::before {
+    content: '';
+    display: block;
+    width: 24px; height: 1px;
+    background: var(--red);
+  }
+
+  .hero-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(72px, 9vw, 128px);
+    line-height: 0.92;
+    letter-spacing: 1px;
+    margin-bottom: 28px;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.2s forwards;
+  }
+  .hero-title .line2 { color: var(--red); }
+
+  .hero-sub {
+    font-size: 17px;
+    color: var(--muted);
+    line-height: 1.7;
+    max-width: 420px;
+    margin-bottom: 48px;
+    font-weight: 300;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.35s forwards;
+  }
+  .hero-sub strong { color: var(--text); font-weight: 400; }
+
+  .hero-actions {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    opacity: 0;
+    animation: fadeUp 0.7s 0.5s forwards;
+  }
+
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--red);
+    color: #fff;
+    text-decoration: none;
+    padding: 14px 28px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.15s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 0 100%);
+  }
+  .btn-primary:hover { background: #c42d3e; transform: translateY(-1px); }
+  .btn-primary svg { width: 16px; height: 16px; }
+
+  .btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 13px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 2px;
+    transition: color 0.2s, border-color 0.2s;
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--text); }
+
+  .hero-stats {
+    display: flex;
+    gap: 40px;
+    margin-top: 56px;
+    padding-top: 40px;
+    border-top: 1px solid var(--border);
+    opacity: 0;
+    animation: fadeUp 0.7s 0.65s forwards;
+  }
+  .stat-item {}
+  .stat-num {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 36px;
+    color: var(--red);
+    line-height: 1;
+    letter-spacing: 1px;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* PHONE MOCKUPS */
+  .hero-right {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: flex-end;
+    height: 620px;
+    opacity: 0;
+    animation: fadeIn 1s 0.4s forwards;
+  }
+
+  .phone-wrap {
+    position: relative;
+    width: 100%;
+    height: 100%;
+  }
+
+  .phone {
+    position: absolute;
+    width: 220px;
+    border-radius: 28px;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 40px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  }
+
+  .phone-main {
+    left: 50%;
+    transform: translateX(-50%);
+    bottom: 0;
+    width: 240px;
+    z-index: 3;
+    border-color: rgba(255,255,255,0.18);
+    box-shadow: 0 60px 100px rgba(0,0,0,0.8), 0 0 60px rgba(232,53,74,0.12);
+  }
+
+  .phone-left {
+    left: 5%;
+    bottom: 60px;
+    transform: rotate(-6deg);
+    z-index: 2;
+    opacity: 0.75;
+  }
+
+  .phone-right {
+    right: 5%;
+    bottom: 80px;
+    transform: rotate(5deg);
+    z-index: 2;
+    opacity: 0.7;
+  }
+
+  .phone img { width: 100%; display: block; }
+
+  /* PHONE SCREEN MOCKUP (CSS-drawn) */
+  .phone-screen {
+    width: 100%;
+    background: #0e0e10;
+    aspect-ratio: 9/18;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .ps-header {
+    padding: 16px 14px 10px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: #f0ede8;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .ps-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 10px 14px;
+  }
+  .ps-tab {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 9px;
+    font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    letter-spacing: 0.3px;
+  }
+  .ps-tab.active { background: rgba(255,255,255,0.12); color: #f0ede8; }
+  .ps-tab.inactive { color: #555; }
+
+  .ps-items { padding: 4px 0; flex: 1; }
+  .ps-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .ps-cover {
+    width: 36px; height: 48px;
+    border-radius: 4px;
+    flex-shrink: 0;
+  }
+  .ps-info { flex: 1; min-width: 0; }
+  .ps-title { font-size: 8.5px; font-weight: 500; color: #ddd; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ps-badge { display: inline-block; padding: 1px 5px; border-radius: 2px; font-size: 7px; font-weight: 600; margin-bottom: 4px; }
+  .ps-badge.anime { background: rgba(232,53,74,0.2); color: var(--red); }
+  .ps-badge.manga { background: rgba(100,180,100,0.2); color: #7ec87e; }
+  .ps-prog { font-size: 7px; color: #555; }
+  .ps-status { font-size: 7px; color: #444; text-align: right; white-space: nowrap; }
+  .ps-bar { height: 2px; background: rgba(255,255,255,0.06); border-radius: 1px; margin-top: 5px; }
+  .ps-bar-fill { height: 100%; background: var(--red); border-radius: 1px; }
+
+  /* search screen */
+  .ps-search {
+    margin: 10px 14px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 7px 10px;
+    font-size: 9px;
+    color: #444;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .ps-search-icon { width: 9px; height: 9px; opacity: 0.4; }
+  .ps-toggle-row { display: flex; gap: 6px; align-items: center; padding: 0 14px 10px; }
+  .ps-toggle { padding: 4px 10px; border-radius: 20px; font-size: 8px; font-weight: 600; }
+  .ps-toggle.on { background: var(--red); color: #fff; }
+  .ps-toggle.off { background: rgba(255,255,255,0.07); color: #666; }
+  .ps-18 { margin-left: auto; font-size: 8px; color: #444; font-family: 'JetBrains Mono', monospace; }
+  .ps-section-label { padding: 6px 14px 6px; font-size: 8px; color: #444; letter-spacing: 1px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; }
+  .ps-search-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .ps-search-cover { width: 28px; height: 38px; border-radius: 3px; flex-shrink: 0; }
+  .ps-search-title { font-size: 8px; color: #ccc; font-weight: 500; margin-bottom: 2px; }
+  .ps-search-meta { font-size: 7px; color: #555; }
+  .ps-search-tags { font-size: 6.5px; color: var(--red); margin-top: 2px; }
+
+  /* stats screen */
+  .ps-analytics-title { padding: 14px 14px 0; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 1px; }
+  .ps-big-stat { margin: 10px 14px; background: rgba(255,255,255,0.04); border-radius: 8px; padding: 12px; text-align: center; }
+  .ps-big-num { font-family: 'Bebas Neue', sans-serif; font-size: 32px; color: var(--red); line-height: 1; }
+  .ps-big-label { font-size: 7px; color: #555; letter-spacing: 1px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; margin-top: 2px; }
+  .ps-mini-cards { display: flex; gap: 6px; padding: 0 14px; }
+  .ps-mini-card { flex: 1; background: rgba(255,255,255,0.04); border-radius: 6px; padding: 8px; }
+  .ps-mini-num { font-family: 'Bebas Neue', sans-serif; font-size: 18px; color: #f0ede8; }
+  .ps-mini-label { font-size: 6px; color: #555; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.5px; }
+  .ps-chart { margin: 10px 14px; background: rgba(255,255,255,0.03); border-radius: 8px; padding: 10px; }
+  .ps-chart-label { font-size: 7px; color: #555; text-transform: uppercase; font-family: 'JetBrains Mono', monospace; letter-spacing: 1px; margin-bottom: 8px; }
+  .ps-chart-bars { display: flex; align-items: flex-end; gap: 3px; height: 36px; }
+  .ps-chart-bar { flex: 1; border-radius: 2px 2px 0 0; background: var(--red); opacity: 0.15; min-height: 3px; }
+  .ps-chart-bar.active { opacity: 1; }
+  .ps-chart-bar.med { opacity: 0.45; }
+  .ps-chart-days { display: flex; gap: 3px; margin-top: 4px; }
+  .ps-chart-day { flex: 1; font-size: 5.5px; color: #444; text-align: center; font-family: 'JetBrains Mono', monospace; }
+
+  /* bottom nav */
+  .ps-nav {
+    display: flex;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 0 10px;
+    background: #0e0e10;
+  }
+  .ps-nav-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; }
+  .ps-nav-icon { width: 14px; height: 14px; opacity: 0.3; }
+  .ps-nav-icon.active-icon { opacity: 1; filter: invert(40%) sepia(80%) saturate(500%) hue-rotate(320deg); }
+  .ps-nav-label { font-size: 6.5px; color: #444; font-family: 'DM Sans', sans-serif; }
+  .ps-nav-label.active-label { color: var(--red); }
+
+  /* FEATURES SECTION */
+  .section { padding: 100px 48px; }
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--red);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after { content: ''; flex: 1; height: 1px; background: var(--border); max-width: 80px; }
+  .section-title {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: clamp(48px, 6vw, 80px);
+    line-height: 0.95;
+    margin-bottom: 16px;
+    letter-spacing: 0.5px;
+  }
+  .section-sub { font-size: 16px; color: var(--muted); max-width: 480px; line-height: 1.7; }
+
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+    margin-top: 64px;
+  }
+
+  .feature-card {
+    background: var(--bg);
+    padding: 40px 36px;
+    transition: background 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  .feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 1px;
+    background: var(--red);
+    transform: scaleX(0);
+    transition: transform 0.3s;
+    transform-origin: left;
+  }
+  .feature-card:hover { background: var(--bg2); }
+  .feature-card:hover::before { transform: scaleX(1); }
+
+  .feature-icon {
+    width: 40px; height: 40px;
+    background: rgba(232,53,74,0.1);
+    border: 1px solid rgba(232,53,74,0.2);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 24px;
+    font-size: 18px;
+  }
+  .feature-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+  }
+  .feature-title {
+    font-size: 18px;
+    font-weight: 500;
+    margin-bottom: 10px;
+    letter-spacing: -0.2px;
+  }
+  .feature-desc { font-size: 14px; color: var(--muted); line-height: 1.65; }
+
+  /* HOW IT WORKS */
+  .how-section {
+    padding: 100px 48px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; margin-top: 64px; position: relative; }
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 28px;
+    left: calc(12.5% + 20px);
+    right: calc(12.5% + 20px);
+    height: 1px;
+    background: var(--border);
+  }
+
+  .step { padding: 0 24px; text-align: center; }
+  .step-num {
+    width: 56px; height: 56px;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    color: var(--red);
+    background: var(--bg2);
+    position: relative;
+    z-index: 2;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .step:hover .step-num { border-color: var(--red); background: rgba(232,53,74,0.08); }
+  .step-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+  .step-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+  /* DOWNLOAD SECTION */
+  .download-section {
+    padding: 120px 48px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .download-section::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(232,53,74,0.06) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .download-section .section-title { font-size: clamp(52px, 7vw, 96px); }
+  .download-section .section-sub { margin: 0 auto 48px; text-align: center; }
+
+  .download-card {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    padding: 40px 56px;
+    position: relative;
+    z-index: 2;
+    clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+  }
+
+  .download-platform {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--red);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+  .download-size { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .download-note {
+    margin-top: 20px;
+    font-size: 12px;
+    color: var(--muted);
+    max-width: 400px;
+    line-height: 1.6;
+  }
+  .download-note a { color: var(--text); }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 40px 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .footer-logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 22px;
+    letter-spacing: 2px;
+    color: var(--muted);
+  }
+  .footer-logo span { color: var(--red); }
+  .footer-copy { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .footer-links { display: flex; gap: 24px; }
+  .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--text); }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* SCROLL ANIMATIONS */
+  .reveal {
+    opacity: 0;
+    transform: translateY(24px);
+    transition: opacity 0.6s, transform 0.6s;
+  }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+
+  /* RESPONSIVE */
+  @media (max-width: 900px) {
+    nav { padding: 16px 24px; }
+    .nav-links { display: none; }
+    .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; gap: 48px; }
+    .hero::after { display: none; }
+    .hero-right { height: 440px; }
+    .phone-left, .phone-right { display: none; }
+    .phone-main { width: 200px; }
+    .section { padding: 64px 24px; }
+    .features-grid { grid-template-columns: 1fr; }
+    .how-section { padding: 64px 24px; }
+    .steps { grid-template-columns: 1fr 1fr; gap: 40px; }
+    .steps::before { display: none; }
+    .download-section { padding: 80px 24px; }
+    footer { padding: 32px 24px; flex-direction: column; gap: 20px; text-align: center; }
+    .hero-stats { gap: 24px; }
+  }
+</style>
+</head>
+<body>
+
+<nav id="nav">
+  <a href="#" class="nav-logo">Otaku<span>Log</span></a>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#how">How it works</a>
+    <a href="#download">Download</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow">Local-first · No account required</div>
+    <h1 class="hero-title">
+      Track<br>
+      <span class="line2">Every</span><br>
+      Frame.
+    </h1>
+    <p class="hero-sub">
+      Your anime & manga journal. Log episodes, track chapters, <strong>see your stats</strong> — all stored on your device. No cloud, no subscriptions.
+    </p>
+    <div class="hero-actions">
+      <a href="#download" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download APK
+      </a>
+      <a href="#features" class="btn-ghost">See features →</a>
+    </div>
+    <div class="hero-stats">
+      <div class="stat-item">
+        <div class="stat-num">2</div>
+        <div class="stat-label">APIs</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">0</div>
+        <div class="stat-label">Accounts needed</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num">100%</div>
+        <div class="stat-label">Local data</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="hero-right">
+    <div class="phone-wrap">
+
+      <!-- LEFT PHONE: Search -->
+      <div class="phone phone-left">
+        <div class="phone-screen">
+          <div class="ps-search" style="margin-top:14px;">
+            <svg class="ps-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            Search for anime...
+          </div>
+          <div class="ps-toggle-row">
+            <div class="ps-toggle on">ANIME</div>
+            <div class="ps-toggle off">MANGA</div>
+            <div class="ps-18">18+</div>
+          </div>
+          <div class="ps-section-label">TRENDING NOW</div>
+          <div class="ps-search-item">
+            <div class="ps-search-cover" style="background:linear-gradient(135deg,#2d1b3d,#5a2d6e)"></div>
+            <div>
+              <div class="ps-search-title">Hell's Paradise S2</div>
+              <div class="ps-search-meta">Anime · 12 eps</div>
+              <div class="ps-search-tags">Action · Adventure · Mystery</div>
+            </div>
+          </div>
+          <div class="ps-search-item">
+            <div class="ps-search-cover" style="background:linear-gradient(135deg,#1a2d4a,#2d5a8e)"></div>
+            <div>
+              <div class="ps-search-title">Frieren: Beyond Journey's End S2</div>
+              <div class="ps-search-meta">Anime · 10 eps</div>
+              <div class="ps-search-tags">Adventure · Drama · Fantasy</div>
+            </div>
+          </div>
+          <div class="ps-search-item">
+            <div class="ps-search-cover" style="background:linear-gradient(135deg,#1a3d2d,#2d8e5a)"></div>
+            <div>
+              <div class="ps-search-title">JUJUTSU KAISEN S3</div>
+              <div class="ps-search-meta">Anime · 12 eps</div>
+              <div class="ps-search-tags">Action · Drama · Supernatural</div>
+            </div>
+          </div>
+          <div class="ps-nav">
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label">Library</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label active-label">Search</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label">Stats</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAIN PHONE: Library -->
+      <div class="phone phone-main">
+        <div class="phone-screen">
+          <div class="ps-header">LIBRARY</div>
+          <div class="ps-tabs">
+            <div class="ps-tab active">✓ All</div>
+            <div class="ps-tab inactive">Anime</div>
+            <div class="ps-tab inactive">Manga</div>
+          </div>
+          <div class="ps-items">
+            <div class="ps-item">
+              <div class="ps-cover" style="background:linear-gradient(135deg,#1a2d4a,#2d5a8e);border-radius:4px;"></div>
+              <div class="ps-info">
+                <div class="ps-title">Frieren: Beyond Journey's End S2</div>
+                <div><span class="ps-badge anime">ANIME</span></div>
+                <div class="ps-prog">Ep 2 / 10</div>
+                <div class="ps-bar"><div class="ps-bar-fill" style="width:20%"></div></div>
+              </div>
+              <div class="ps-status">WATCHING</div>
+            </div>
+            <div class="ps-item">
+              <div class="ps-cover" style="background:linear-gradient(135deg,#2d1b3d,#5a2d6e);border-radius:4px;"></div>
+              <div class="ps-info">
+                <div class="ps-title">Hell's Paradise Season 2</div>
+                <div><span class="ps-badge anime">ANIME</span></div>
+                <div class="ps-prog">Ep 4 / 12</div>
+                <div class="ps-bar"><div class="ps-bar-fill" style="width:33%"></div></div>
+              </div>
+              <div class="ps-status">WATCHING</div>
+            </div>
+            <div class="ps-item">
+              <div class="ps-cover" style="background:linear-gradient(135deg,#2d2d1a,#6e6e2d);border-radius:4px;display:flex;align-items:center;justify-content:center;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              </div>
+              <div class="ps-info">
+                <div class="ps-title">Tensei Shitara Ore ga Heroine</div>
+                <div><span class="ps-badge manga">MANGA</span></div>
+                <div class="ps-prog">Ch 0 / ?</div>
+                <div class="ps-bar"><div class="ps-bar-fill" style="width:0%"></div></div>
+              </div>
+              <div class="ps-status">READING</div>
+            </div>
+          </div>
+          <div class="ps-nav">
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label active-label">Library</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label">Search</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label">Stats</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT PHONE: Stats -->
+      <div class="phone phone-right">
+        <div class="phone-screen">
+          <div class="ps-analytics-title">ANALYTICS</div>
+          <div class="ps-big-stat">
+            <div class="ps-big-num">24.6</div>
+            <div class="ps-big-label">TOTAL HOURS</div>
+          </div>
+          <div class="ps-mini-cards">
+            <div class="ps-mini-card">
+              <div class="ps-mini-num">🔥 7</div>
+              <div class="ps-mini-label">DAY STREAK</div>
+            </div>
+            <div class="ps-mini-card">
+              <div class="ps-mini-num">48m</div>
+              <div class="ps-mini-label">TODAY</div>
+            </div>
+          </div>
+          <div class="ps-chart">
+            <div class="ps-chart-label">WEEKLY TRENDS</div>
+            <div class="ps-chart-bars">
+              <div class="ps-chart-bar med" style="height:40%"></div>
+              <div class="ps-chart-bar" style="height:20%"></div>
+              <div class="ps-chart-bar med" style="height:60%"></div>
+              <div class="ps-chart-bar" style="height:30%"></div>
+              <div class="ps-chart-bar med" style="height:50%"></div>
+              <div class="ps-chart-bar active" style="height:100%"></div>
+              <div class="ps-chart-bar" style="height:15%"></div>
+            </div>
+            <div class="ps-chart-days">
+              <div class="ps-chart-day">M</div><div class="ps-chart-day">T</div>
+              <div class="ps-chart-day">W</div><div class="ps-chart-day">T</div>
+              <div class="ps-chart-day">F</div><div class="ps-chart-day">S</div>
+              <div class="ps-chart-day">S</div>
+            </div>
+          </div>
+          <div class="ps-nav">
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label">Library</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label">Search</div></div>
+            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label active-label">Stats</div></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section" id="features">
+  <div class="reveal">
+    <div class="section-label">What's inside</div>
+    <h2 class="section-title">Built for<br><span style="color:var(--red)">real fans.</span></h2>
+    <p class="section-sub">Everything you need to track your watch history, nothing you don't.</p>
+  </div>
+  <div class="features-grid reveal">
+    <div class="feature-card">
+      <div class="feature-icon">📚</div>
+      <div class="feature-num">01</div>
+      <div class="feature-title">Unified Library</div>
+      <div class="feature-desc">Anime and manga in one place. Filter, sort by progress or rating, and see everything at a glance.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">⚡</div>
+      <div class="feature-num">02</div>
+      <div class="feature-title">Fast Logging</div>
+      <div class="feature-desc">Tap +1 to log an episode or chapter in under a second. Long-press for bulk logging or status changes.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔍</div>
+      <div class="feature-num">03</div>
+      <div class="feature-title">Smart Search</div>
+      <div class="feature-desc">Infinite scroll search powered by AniList and MangaDex. Proper 18+ tag filtering, not just a boolean toggle.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">📊</div>
+      <div class="feature-num">04</div>
+      <div class="feature-title">Real Analytics</div>
+      <div class="feature-desc">Total hours, daily streaks, weekly trends. Know exactly how much time you've invested.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🔒</div>
+      <div class="feature-num">05</div>
+      <div class="feature-title">100% Local</div>
+      <div class="feature-desc">All data lives on your device with Isar. No account, no cloud, no data harvesting. Ever.</div>
+    </div>
+    <div class="feature-card">
+      <div class="feature-icon">🌙</div>
+      <div class="feature-num">06</div>
+      <div class="feature-title">Dark-first Design</div>
+      <div class="feature-desc">Built for late-night watching sessions. A custom dark theme that doesn't burn your eyes at 2am.</div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div class="reveal">
+    <div class="section-label">The loop</div>
+    <h2 class="section-title">Simple<br><span style="color:var(--red)">by design.</span></h2>
+  </div>
+  <div class="steps reveal">
+    <div class="step">
+      <div class="step-num">1</div>
+      <div class="step-title">Search</div>
+      <div class="step-desc">Find any anime or manga from AniList and MangaDex's massive catalogues.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">2</div>
+      <div class="step-title">Add</div>
+      <div class="step-desc">Preview metadata and add to your library with one tap. No duplicates.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">3</div>
+      <div class="step-title">Log</div>
+      <div class="step-desc">Mark episodes or chapters as you go. Quick +1 or bulk update — your call.</div>
+    </div>
+    <div class="step">
+      <div class="step-num">4</div>
+      <div class="step-title">Reflect</div>
+      <div class="step-desc">Watch your stats grow. Streaks, hours, weekly charts, dominant medium.</div>
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section class="download-section" id="download">
+  <div class="reveal">
+    <div class="section-label" style="justify-content:center;">Early Access</div>
+    <h2 class="section-title">Get the<br><span style="color:var(--red)">APK.</span></h2>
+    <p class="section-sub">Free. No Play Store required. Just download, install, and start tracking.</p>
+  </div>
+  <div class="reveal" style="margin-top:48px;">
+    <div class="download-card">
+      <div class="download-platform">Android APK · arm64</div>
+      <a href="#" class="btn-primary" style="font-size:16px;padding:16px 36px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Download OtakuLog
+      </a>
+      <div class="download-size">v1.0.0 · Android 5.0+</div>
+    </div>
+    <p class="download-note">
+      Sideloading required — enable <strong>Install from unknown sources</strong> in your Android settings. 
+      <a href="#">How to install →</a>
+    </p>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Otaku<span>Log</span></div>
+  <div class="footer-copy">// built with Flutter · local-first</div>
+  <div class="footer-links">
+    <a href="#">Privacy</a>
+    <a href="#">GitHub</a>
+    <a href="#download">Download</a>
+  </div>
+</footer>
+
+<script>
+  // Nav scroll effect
+  const nav = document.getElementById('nav');
+  window.addEventListener('scroll', () => {
+    nav.classList.toggle('scrolled', window.scrollY > 40);
+  });
+
+  // Scroll reveal
+  const reveals = document.querySelectorAll('.reveal');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry, i) => {
+      if (entry.isIntersecting) {
+        setTimeout(() => entry.target.classList.add('visible'), i * 80);
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.1 });
+  reveals.forEach(el => observer.observe(el));
+</script>
+</body>
+</html>

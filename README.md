@@ -1,6 +1,6 @@
-# GoonTwin (goon_tracker)
+# OtakuLog
 
-An anime & manga tracking app built with Flutter. Search via AniList & MangaDex, manage your library, log progress, and view stats.
+A local-first anime and manga tracker built with Flutter. Search via AniList and MangaDex, manage your library, log progress quickly, view wrapped-style stats, and optionally back up to the cloud.
 
 ## Prerequisites
 
@@ -23,6 +23,17 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
+## Environment
+
+Create a local `.env` file for runtime cloud features:
+
+```env
+SUPABASE_URL=your_supabase_url
+SUPABASE_ANON_KEY=your_supabase_anon_key
+```
+
+Keep admin-only values like the service-role key in `.env.admin`. They are not loaded by the Flutter app.
+
 ## Running the App
 
 ```bash
@@ -40,21 +51,47 @@ flutter devices
 ## Building for Release
 
 ```bash
-# Windows
-flutter build windows
-
 # Android APK
-flutter build apk
+flutter build apk --release
 
 # Android App Bundle
 flutter build appbundle
 ```
+
+For signed Android releases:
+
+1. Copy `android/key.properties.example` to `android/key.properties`
+2. Fill in your keystore values
+3. Run the release build command above
+
+If `android/key.properties` is missing, the app falls back to debug signing for local testing.
 
 ## Running Tests
 
 ```bash
 flutter test
 ```
+
+## Internal Testing Checklist
+
+- Complete onboarding or skip it
+- Search anime and manga, then switch filters
+- Add items to the library and verify duplicate prevention
+- Use quick log and log-to-target flows
+- Open wrapped cards and try share/save
+- Sign in, back up, and restore on another device
+- Toggle reminders and confirm they stop after logging
+
+Feedback prompts:
+
+- What feels easiest to use?
+- What feels confusing?
+- What would you remove?
+- What would make you come back tomorrow?
+
+Hidden tester tool:
+
+- Long-press the version row in `Settings > About` to open the analytics debug screen
 
 ## Project Structure
 

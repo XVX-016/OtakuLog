@@ -22,35 +22,50 @@ const UserModelSchema = CollectionSchema(
       name: r'avatarPath',
       type: IsarType.string,
     ),
-    r'defaultAnimeWatchTime': PropertySchema(
+    r'createdAt': PropertySchema(
       id: 1,
+      name: r'createdAt',
+      type: IsarType.dateTime,
+    ),
+    r'defaultAnimeWatchTime': PropertySchema(
+      id: 2,
       name: r'defaultAnimeWatchTime',
       type: IsarType.long,
     ),
     r'defaultContentRating': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'defaultContentRating',
       type: IsarType.string,
     ),
     r'defaultMangaReadTime': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'defaultMangaReadTime',
       type: IsarType.long,
     ),
     r'defaultSearchType': PropertySchema(
-      id: 4,
+      id: 5,
       name: r'defaultSearchType',
       type: IsarType.string,
     ),
     r'filter18Plus': PropertySchema(
-      id: 5,
+      id: 6,
       name: r'filter18Plus',
       type: IsarType.bool,
     ),
+    r'localId': PropertySchema(
+      id: 7,
+      name: r'localId',
+      type: IsarType.string,
+    ),
     r'name': PropertySchema(
-      id: 6,
+      id: 8,
       name: r'name',
       type: IsarType.string,
+    ),
+    r'updatedAt': PropertySchema(
+      id: 9,
+      name: r'updatedAt',
+      type: IsarType.dateTime,
     )
   },
   estimateSize: _userModelEstimateSize,
@@ -58,7 +73,21 @@ const UserModelSchema = CollectionSchema(
   deserialize: _userModelDeserialize,
   deserializeProp: _userModelDeserializeProp,
   idName: r'id',
-  indexes: {},
+  indexes: {
+    r'localId': IndexSchema(
+      id: 1199848425898359622,
+      name: r'localId',
+      unique: true,
+      replace: true,
+      properties: [
+        IndexPropertySchema(
+          name: r'localId',
+          type: IndexType.hash,
+          caseSensitive: true,
+        )
+      ],
+    )
+  },
   links: {},
   embeddedSchemas: {},
   getId: _userModelGetId,
@@ -81,6 +110,7 @@ int _userModelEstimateSize(
   }
   bytesCount += 3 + object.defaultContentRating.length * 3;
   bytesCount += 3 + object.defaultSearchType.length * 3;
+  bytesCount += 3 + object.localId.length * 3;
   bytesCount += 3 + object.name.length * 3;
   return bytesCount;
 }
@@ -92,12 +122,15 @@ void _userModelSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.avatarPath);
-  writer.writeLong(offsets[1], object.defaultAnimeWatchTime);
-  writer.writeString(offsets[2], object.defaultContentRating);
-  writer.writeLong(offsets[3], object.defaultMangaReadTime);
-  writer.writeString(offsets[4], object.defaultSearchType);
-  writer.writeBool(offsets[5], object.filter18Plus);
-  writer.writeString(offsets[6], object.name);
+  writer.writeDateTime(offsets[1], object.createdAt);
+  writer.writeLong(offsets[2], object.defaultAnimeWatchTime);
+  writer.writeString(offsets[3], object.defaultContentRating);
+  writer.writeLong(offsets[4], object.defaultMangaReadTime);
+  writer.writeString(offsets[5], object.defaultSearchType);
+  writer.writeBool(offsets[6], object.filter18Plus);
+  writer.writeString(offsets[7], object.localId);
+  writer.writeString(offsets[8], object.name);
+  writer.writeDateTime(offsets[9], object.updatedAt);
 }
 
 UserModel _userModelDeserialize(
@@ -108,13 +141,16 @@ UserModel _userModelDeserialize(
 ) {
   final object = UserModel();
   object.avatarPath = reader.readStringOrNull(offsets[0]);
-  object.defaultAnimeWatchTime = reader.readLong(offsets[1]);
-  object.defaultContentRating = reader.readString(offsets[2]);
-  object.defaultMangaReadTime = reader.readLong(offsets[3]);
-  object.defaultSearchType = reader.readString(offsets[4]);
-  object.filter18Plus = reader.readBool(offsets[5]);
+  object.createdAt = reader.readDateTime(offsets[1]);
+  object.defaultAnimeWatchTime = reader.readLong(offsets[2]);
+  object.defaultContentRating = reader.readString(offsets[3]);
+  object.defaultMangaReadTime = reader.readLong(offsets[4]);
+  object.defaultSearchType = reader.readString(offsets[5]);
+  object.filter18Plus = reader.readBool(offsets[6]);
   object.id = id;
-  object.name = reader.readString(offsets[6]);
+  object.localId = reader.readString(offsets[7]);
+  object.name = reader.readString(offsets[8]);
+  object.updatedAt = reader.readDateTime(offsets[9]);
   return object;
 }
 
@@ -128,17 +164,23 @@ P _userModelDeserializeProp<P>(
     case 0:
       return (reader.readStringOrNull(offset)) as P;
     case 1:
-      return (reader.readLong(offset)) as P;
+      return (reader.readDateTime(offset)) as P;
     case 2:
-      return (reader.readString(offset)) as P;
-    case 3:
       return (reader.readLong(offset)) as P;
+    case 3:
+      return (reader.readString(offset)) as P;
     case 4:
-      return (reader.readString(offset)) as P;
+      return (reader.readLong(offset)) as P;
     case 5:
-      return (reader.readBool(offset)) as P;
-    case 6:
       return (reader.readString(offset)) as P;
+    case 6:
+      return (reader.readBool(offset)) as P;
+    case 7:
+      return (reader.readString(offset)) as P;
+    case 8:
+      return (reader.readString(offset)) as P;
+    case 9:
+      return (reader.readDateTime(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
@@ -154,6 +196,61 @@ List<IsarLinkBase<dynamic>> _userModelGetLinks(UserModel object) {
 
 void _userModelAttach(IsarCollection<dynamic> col, Id id, UserModel object) {
   object.id = id;
+}
+
+extension UserModelByIndex on IsarCollection<UserModel> {
+  Future<UserModel?> getByLocalId(String localId) {
+    return getByIndex(r'localId', [localId]);
+  }
+
+  UserModel? getByLocalIdSync(String localId) {
+    return getByIndexSync(r'localId', [localId]);
+  }
+
+  Future<bool> deleteByLocalId(String localId) {
+    return deleteByIndex(r'localId', [localId]);
+  }
+
+  bool deleteByLocalIdSync(String localId) {
+    return deleteByIndexSync(r'localId', [localId]);
+  }
+
+  Future<List<UserModel?>> getAllByLocalId(List<String> localIdValues) {
+    final values = localIdValues.map((e) => [e]).toList();
+    return getAllByIndex(r'localId', values);
+  }
+
+  List<UserModel?> getAllByLocalIdSync(List<String> localIdValues) {
+    final values = localIdValues.map((e) => [e]).toList();
+    return getAllByIndexSync(r'localId', values);
+  }
+
+  Future<int> deleteAllByLocalId(List<String> localIdValues) {
+    final values = localIdValues.map((e) => [e]).toList();
+    return deleteAllByIndex(r'localId', values);
+  }
+
+  int deleteAllByLocalIdSync(List<String> localIdValues) {
+    final values = localIdValues.map((e) => [e]).toList();
+    return deleteAllByIndexSync(r'localId', values);
+  }
+
+  Future<Id> putByLocalId(UserModel object) {
+    return putByIndex(r'localId', object);
+  }
+
+  Id putByLocalIdSync(UserModel object, {bool saveLinks = true}) {
+    return putByIndexSync(r'localId', object, saveLinks: saveLinks);
+  }
+
+  Future<List<Id>> putAllByLocalId(List<UserModel> objects) {
+    return putAllByIndex(r'localId', objects);
+  }
+
+  List<Id> putAllByLocalIdSync(List<UserModel> objects,
+      {bool saveLinks = true}) {
+    return putAllByIndexSync(r'localId', objects, saveLinks: saveLinks);
+  }
 }
 
 extension UserModelQueryWhereSort
@@ -229,6 +326,51 @@ extension UserModelQueryWhere
         upper: upperId,
         includeUpper: includeUpper,
       ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterWhereClause> localIdEqualTo(
+      String localId) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addWhereClause(IndexWhereClause.equalTo(
+        indexName: r'localId',
+        value: [localId],
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterWhereClause> localIdNotEqualTo(
+      String localId) {
+    return QueryBuilder.apply(this, (query) {
+      if (query.whereSort == Sort.asc) {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localId',
+              lower: [],
+              upper: [localId],
+              includeUpper: false,
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localId',
+              lower: [localId],
+              includeLower: false,
+              upper: [],
+            ));
+      } else {
+        return query
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localId',
+              lower: [localId],
+              includeLower: false,
+              upper: [],
+            ))
+            .addWhereClause(IndexWhereClause.between(
+              indexName: r'localId',
+              lower: [],
+              upper: [localId],
+              includeUpper: false,
+            ));
+      }
     });
   }
 }
@@ -382,6 +524,60 @@ extension UserModelQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'avatarPath',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> createdAtEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition>
+      createdAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> createdAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'createdAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> createdAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'createdAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -833,6 +1029,137 @@ extension UserModelQueryFilter
     });
   }
 
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdEqualTo(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdGreaterThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdLessThan(
+    String value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdBetween(
+    String lower,
+    String upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'localId',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdContains(
+      String value,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'localId',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdMatches(
+      String pattern,
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'localId',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> localIdIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'localId',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition>
+      localIdIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'localId',
+        value: '',
+      ));
+    });
+  }
+
   QueryBuilder<UserModel, UserModel, QAfterFilterCondition> nameEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -962,6 +1289,60 @@ extension UserModelQueryFilter
       ));
     });
   }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> updatedAtEqualTo(
+      DateTime value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition>
+      updatedAtGreaterThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> updatedAtLessThan(
+    DateTime value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'updatedAt',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterFilterCondition> updatedAtBetween(
+    DateTime lower,
+    DateTime upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'updatedAt',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
 }
 
 extension UserModelQueryObject
@@ -980,6 +1361,18 @@ extension UserModelQuerySortBy on QueryBuilder<UserModel, UserModel, QSortBy> {
   QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByAvatarPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -1050,6 +1443,18 @@ extension UserModelQuerySortBy on QueryBuilder<UserModel, UserModel, QSortBy> {
     });
   }
 
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localId', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1059,6 +1464,18 @@ extension UserModelQuerySortBy on QueryBuilder<UserModel, UserModel, QSortBy> {
   QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByNameDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> sortByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
     });
   }
 }
@@ -1074,6 +1491,18 @@ extension UserModelQuerySortThenBy
   QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByAvatarPathDesc() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'avatarPath', Sort.desc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByCreatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'createdAt', Sort.desc);
     });
   }
 
@@ -1156,6 +1585,18 @@ extension UserModelQuerySortThenBy
     });
   }
 
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByLocalId() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localId', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByLocalIdDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'localId', Sort.desc);
+    });
+  }
+
   QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByName() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'name', Sort.asc);
@@ -1167,6 +1608,18 @@ extension UserModelQuerySortThenBy
       return query.addSortBy(r'name', Sort.desc);
     });
   }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.asc);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QAfterSortBy> thenByUpdatedAtDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'updatedAt', Sort.desc);
+    });
+  }
 }
 
 extension UserModelQueryWhereDistinct
@@ -1175,6 +1628,12 @@ extension UserModelQueryWhereDistinct
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'avatarPath', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QDistinct> distinctByCreatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'createdAt');
     });
   }
 
@@ -1214,10 +1673,23 @@ extension UserModelQueryWhereDistinct
     });
   }
 
+  QueryBuilder<UserModel, UserModel, QDistinct> distinctByLocalId(
+      {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'localId', caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<UserModel, UserModel, QDistinct> distinctByName(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'name', caseSensitive: caseSensitive);
+    });
+  }
+
+  QueryBuilder<UserModel, UserModel, QDistinct> distinctByUpdatedAt() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'updatedAt');
     });
   }
 }
@@ -1233,6 +1705,12 @@ extension UserModelQueryProperty
   QueryBuilder<UserModel, String?, QQueryOperations> avatarPathProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'avatarPath');
+    });
+  }
+
+  QueryBuilder<UserModel, DateTime, QQueryOperations> createdAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'createdAt');
     });
   }
 
@@ -1270,9 +1748,21 @@ extension UserModelQueryProperty
     });
   }
 
+  QueryBuilder<UserModel, String, QQueryOperations> localIdProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'localId');
+    });
+  }
+
   QueryBuilder<UserModel, String, QQueryOperations> nameProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'name');
+    });
+  }
+
+  QueryBuilder<UserModel, DateTime, QQueryOperations> updatedAtProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'updatedAt');
     });
   }
 }

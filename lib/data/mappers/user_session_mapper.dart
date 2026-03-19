@@ -4,7 +4,7 @@ import 'package:goon_tracker/domain/entities/user_session.dart';
 class UserSessionMapper {
   static UserSessionEntity toEntity(UserSessionModel model) {
     return UserSessionEntity(
-      id: model.id.toString(),
+      id: model.localId?.isNotEmpty == true ? model.localId! : model.id.toString(),
       contentId: model.contentId,
       contentType: _mapContentTypeToEntity(model.contentType),
       startTime: model.startTime,
@@ -15,7 +15,7 @@ class UserSessionMapper {
 
   static UserSessionModel toModel(UserSessionEntity entity) {
     return UserSessionModel()
-      ..id = int.tryParse(entity.id) ?? 0 // Note: Isar handles id if 0/null usually, but mapper might need to be careful
+      ..localId = entity.id
       ..contentId = entity.contentId
       ..contentType = _mapContentTypeToModel(entity.contentType)
       ..startTime = entity.startTime

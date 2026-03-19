@@ -9,7 +9,7 @@ class AnimeEntity implements TrackableContent {
   final String title;
   @override
   final String coverImage;
-  
+
   final int totalEpisodes;
   final int currentEpisode;
   final AnimeStatus status;
@@ -19,7 +19,7 @@ class AnimeEntity implements TrackableContent {
   final List<String> genres;
   @override
   final String? description;
-  
+
   final DateTime createdAt;
   @override
   final DateTime updatedAt;
@@ -50,6 +50,9 @@ class AnimeEntity implements TrackableContent {
     int? currentEpisode,
     AnimeStatus? status,
     double? rating,
+    List<String>? genres,
+    String? description,
+    DateTime? createdAt,
     DateTime? updatedAt,
   }) {
     return AnimeEntity(
@@ -60,9 +63,9 @@ class AnimeEntity implements TrackableContent {
       currentEpisode: currentEpisode ?? this.currentEpisode,
       status: status ?? this.status,
       rating: rating ?? this.rating,
-      genres: genres, // Typically doesn't change
+      genres: genres ?? this.genres,
       description: description ?? this.description,
-      createdAt: createdAt,
+      createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
   }
