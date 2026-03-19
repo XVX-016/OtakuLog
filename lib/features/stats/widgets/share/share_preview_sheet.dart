@@ -3,8 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/utils/widget_capture.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/widget_capture.dart';
 
 class SharePreviewSheet extends StatefulWidget {
   final String title;

@@ -6,7 +6,7 @@ part 'manga_model.g.dart';
 class MangaModel {
   Id id = Isar.autoIncrement;
 
-  @Index(unique: true)
+  @Index(unique: true, replace: true)
   late String remoteId;
 
   late String title;

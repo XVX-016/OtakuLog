@@ -1,4 +1,4 @@
-import 'package:goon_tracker/domain/entities/user.dart';
+import 'package:otakulog/domain/entities/user.dart';
 
 abstract class UserRepository {
   Future<UserEntity?> getUser(String id);

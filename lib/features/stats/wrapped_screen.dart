@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
-import 'package:goon_tracker/features/stats/widgets/share/share_preview_sheet.dart';
-import 'package:goon_tracker/features/stats/widgets/share/wrapped_summary_card.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/features/stats/widgets/share/share_preview_sheet.dart';
+import 'package:otakulog/features/stats/widgets/share/wrapped_summary_card.dart';
 import 'package:intl/intl.dart';
 
 class WrappedScreen extends ConsumerWidget {

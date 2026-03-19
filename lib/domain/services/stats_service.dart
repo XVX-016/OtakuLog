@@ -1,8 +1,8 @@
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
 import 'package:intl/intl.dart';
 
 class StatsService {

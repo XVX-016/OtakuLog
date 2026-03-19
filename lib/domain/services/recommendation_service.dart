@@ -1,11 +1,11 @@
 import 'dart:math';
 
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class UserPreferenceProfile {
   final Map<String, double> topGenres;
@@ -60,6 +60,7 @@ class PersonalizedRecommendation {
         'score': item.score,
         'isAdult': item.isAdult,
         'statusLabel': item.statusLabel,
+        'sourceLabel': item.sourceLabel,
         'creatorNames': item.creatorNames,
         'totalCount': item.totalCount,
         'inLibrary': item.inLibrary,
@@ -136,6 +137,7 @@ class PersonalizedRecommendation {
         score: (rawItem['score'] as num?)?.toDouble(),
         isAdult: rawItem['isAdult'] == true,
         statusLabel: rawItem['statusLabel']?.toString(),
+        sourceLabel: rawItem['sourceLabel']?.toString(),
         creatorNames: (rawItem['creatorNames'] as List? ?? const []).map((name) => name.toString()).toList(),
         totalCount: (rawItem['totalCount'] as num?)?.toInt(),
         inLibrary: rawItem['inLibrary'] == true,

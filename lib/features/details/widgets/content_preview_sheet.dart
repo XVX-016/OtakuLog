@@ -1,15 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/utils/text_sanitizer.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
-import 'package:goon_tracker/features/search/search_notifier.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/text_sanitizer.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
+import 'package:otakulog/features/search/search_notifier.dart';
 
 class ContentPreviewSheet extends ConsumerStatefulWidget {
   final TrackableContent? content;
@@ -36,6 +36,16 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
 
   bool get _isAnime => _content is AnimeEntity;
 
+  int get _resolvedTotalChapters {
+    final metadataCount = widget.searchItem?.totalCount ?? 0;
+    final contentCount = _content.totalProgress;
+    final fetchedCount = _totalChapters ?? 0;
+    if (fetchedCount > 0) return fetchedCount;
+    if (metadataCount > 0) return metadataCount;
+    if (contentCount > 0) return contentCount;
+    return 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -46,7 +56,7 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
     if (_content is AnimeEntity) {
       _animeStatus = (_content as AnimeEntity).status;
     }
-    _rating = _content.rating;
+    _rating = null;
   }
 
   Future<void> _fetchChapters() async {
@@ -63,7 +73,7 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final totalCount = _isAnime ? _content.totalProgress : (_totalChapters ?? _content.totalProgress);
+    final totalCount = _isAnime ? _content.totalProgress : _resolvedTotalChapters;
     final isInLibrary = widget.searchItem?.inLibrary ?? false;
     final metadata = widget.searchItem;
     final sanitizedDescription =
@@ -121,13 +131,13 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
                       margin: const EdgeInsets.only(left: 8),
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.green.withOpacity(0.16),
+                        color: const Color(0xFF2E7D32),
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: const Text(
                         'IN LIBRARY',
                         style: TextStyle(
-                          color: Colors.greenAccent,
+                          color: Colors.white,
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
                         ),
@@ -372,7 +382,7 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
         final existing = await ref.read(mangaRepositoryProvider).getMangaById(_content.id);
         if (existing == null) {
           final manga = (_content as MangaEntity).copyWith(
-            totalChapters: _totalChapters ?? _content.totalProgress,
+            totalChapters: _resolvedTotalChapters,
             status: _mangaStatus ?? MangaStatus.reading,
             rating: _rating,
           );
@@ -389,9 +399,17 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(added ? 'Added ${_content.title} to Library' : '${_content.title} is already in Library'),
-            backgroundColor: added ? Colors.green[700] : AppTheme.elevated,
+            content: Text(
+              added
+                  ? 'Added ${_content.title} to Library'
+                  : '${_content.title} is already in Library',
+              style: const TextStyle(color: Colors.black87),
+            ),
+            backgroundColor: Colors.white,
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            showCloseIcon: true,
+            closeIconColor: Colors.black87,
           ),
         );
       }
@@ -402,6 +420,8 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
             content: Text('Error: $error'),
             backgroundColor: Colors.red[700],
             behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 5),
+            showCloseIcon: true,
           ),
         );
       }
@@ -426,6 +446,9 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
         final existing = await ref.read(mangaRepositoryProvider).getMangaById(_content.id);
         if (existing != null) {
           await ref.read(mangaRepositoryProvider).saveManga(existing.copyWith(
+                totalChapters: existing.totalChapters > 0
+                    ? existing.totalChapters
+                    : _resolvedTotalChapters,
                 status: _mangaStatus ?? existing.status,
                 rating: _rating,
               ));
@@ -439,15 +462,26 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Library item updated'),
+            content: Text(
+              'Library item updated',
+              style: TextStyle(color: Colors.black87),
+            ),
+            backgroundColor: Colors.white,
             behavior: SnackBarBehavior.floating,
+            duration: Duration(seconds: 5),
+            showCloseIcon: true,
+            closeIconColor: Colors.black87,
           ),
         );
       }
     } catch (error) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $error')),
+          SnackBar(
+            content: Text('Error: $error'),
+            duration: const Duration(seconds: 5),
+            showCloseIcon: true,
+          ),
         );
       }
     } finally {

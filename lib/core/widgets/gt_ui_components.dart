@@ -1,6 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
+import 'package:otakulog/app/theme.dart';
 
 class GTCard extends StatelessWidget {
   final Widget child;

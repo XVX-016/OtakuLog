@@ -2,17 +2,17 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/domain/services/stats_service.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
-import 'package:goon_tracker/features/stats/widgets/heatmap.dart';
-import 'package:goon_tracker/features/stats/widgets/share/lifetime_stats_card.dart';
-import 'package:goon_tracker/features/stats/widgets/share/monthly_summary_card.dart';
-import 'package:goon_tracker/features/stats/widgets/share/share_preview_sheet.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/services/stats_service.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/features/stats/widgets/heatmap.dart';
+import 'package:otakulog/features/stats/widgets/share/lifetime_stats_card.dart';
+import 'package:otakulog/features/stats/widgets/share/monthly_summary_card.dart';
+import 'package:otakulog/features/stats/widgets/share/share_preview_sheet.dart';
 import 'package:intl/intl.dart';
 
 enum StatsShareType { monthly, lifetime }
@@ -84,7 +84,7 @@ class StatsScreen extends ConsumerWidget {
                       '$streakCount',
                       suffix: streakCount == 1 ? 'day' : 'days',
                       icon: Icons.local_fire_department,
-                      color: Colors.orange,
+                      color: AppTheme.accent,
                     ),
                     _buildAnimatedStatCard(
                       'Today',
@@ -98,14 +98,14 @@ class StatsScreen extends ConsumerWidget {
                       totalHours,
                       suffix: 'hrs',
                       icon: Icons.timer_outlined,
-                      color: Colors.lightBlueAccent,
+                      color: AppTheme.accent,
                     ),
                     _buildAnimatedStatCard(
                       'Library',
                       '${libraryItems.length}',
                       suffix: 'items',
                       icon: Icons.collections_bookmark_outlined,
-                      color: Colors.greenAccent,
+                      color: AppTheme.accent,
                     ),
                   ],
                 ),
@@ -122,7 +122,7 @@ class StatsScreen extends ConsumerWidget {
                 else
                   _buildWeeklyChart(weeklySummary),
                 const SizedBox(height: 24),
-                const GTSectionHeader(title: 'Activity Heatmap'),
+                const GTSectionHeader(title: 'Activity'),
                 const SizedBox(height: 8),
                 GTCard(
                   child: const ActivityHeatmap(),

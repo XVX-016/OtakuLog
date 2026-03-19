@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
 
 class SearchFilterSheet extends StatefulWidget {
   final SearchFilters initialFilters;
@@ -122,6 +122,24 @@ class _SearchFilterSheetState extends State<SearchFilterSheet> {
                     .toList(),
               ),
               const SizedBox(height: 20),
+              if (medium == SearchMedium.manga) ...[
+                _sectionTitle('Category'),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: MangaCategoryFilter.values
+                      .map((category) => _choiceChip(
+                            label: _mangaCategoryLabel(category),
+                            selected: _working.mangaCategory == category,
+                            onTap: () => setState(() {
+                              _working =
+                                  _working.copyWith(mangaCategory: category);
+                            }),
+                          ))
+                      .toList(),
+                ),
+                const SizedBox(height: 20),
+              ],
               _sectionTitle('Tags'),
               Wrap(
                 spacing: 10,
@@ -243,6 +261,19 @@ class _SearchFilterSheetState extends State<SearchFilterSheet> {
         return 'Ongoing';
       case ContentStatusFilter.completed:
         return 'Completed';
+    }
+  }
+
+  String _mangaCategoryLabel(MangaCategoryFilter category) {
+    switch (category) {
+      case MangaCategoryFilter.any:
+        return 'Any';
+      case MangaCategoryFilter.manga:
+        return 'Manga';
+      case MangaCategoryFilter.manhwa:
+        return 'Manhwa';
+      case MangaCategoryFilter.manhua:
+        return 'Manhua';
     }
   }
 }

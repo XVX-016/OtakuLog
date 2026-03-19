@@ -1,4 +1,4 @@
-import 'package:goon_tracker/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/anime.dart';
 
 abstract class AnimeRepository {
   Future<List<AnimeEntity>> getAllAnime();

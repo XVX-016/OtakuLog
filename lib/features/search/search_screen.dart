@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
-import 'package:goon_tracker/features/search/search_notifier.dart';
-import 'package:goon_tracker/features/search/widgets/search_filter_sheet.dart';
-import 'package:goon_tracker/features/search/widgets/search_result_card.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/features/details/widgets/content_preview_sheet.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
+import 'package:otakulog/features/search/search_notifier.dart';
+import 'package:otakulog/features/search/widgets/search_filter_sheet.dart';
+import 'package:otakulog/features/search/widgets/search_result_card.dart';
 import 'package:shimmer/shimmer.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
@@ -169,20 +169,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           const SizedBox(width: 8),
           _mediumChip(
               SearchMedium.manga, state.filters.medium == SearchMedium.manga),
-          const Spacer(),
-          if (state.filters.hasAdvancedFilters)
-            Flexible(
-              child: Text(
-                _activeFilterSummary(state.filters),
-                style: const TextStyle(
-                  color: AppTheme.secondaryText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                ),
-                textAlign: TextAlign.right,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
         ],
       ),
     );
@@ -345,11 +331,22 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _ensureInitialDiscover(SearchState state) {
-    if (_seededDiscover ||
-        state.isLoading ||
-        state.results.isNotEmpty ||
-        state.errorMessage != null ||
-        state.currentPage > 0) {
+    if (!state.isLoading &&
+        state.results.isEmpty &&
+        state.errorMessage == null &&
+        state.currentPage == 0 &&
+        state.query.trim().isEmpty &&
+        _seededDiscover) {
+      _seededDiscover = false;
+    }
+
+    final shouldSeed = !state.isLoading &&
+        state.results.isEmpty &&
+        state.errorMessage == null &&
+        state.currentPage == 0 &&
+        state.query.trim().isEmpty;
+
+    if (!shouldSeed || _seededDiscover) {
       return;
     }
     _seededDiscover = true;
@@ -357,28 +354,6 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       if (!mounted) return;
       ref.read(searchNotifierProvider.notifier).refresh();
     });
-  }
-
-  String _activeFilterSummary(SearchFilters filters) {
-    final pieces = <String>[
-      if (filters.adultMode != AdultMode.off) _adultLabel(filters.adultMode),
-      if (filters.status != ContentStatusFilter.any) filters.status.name,
-      if (filters.sort != SearchSort.trending) filters.sort.name,
-      if (filters.includedTags.isNotEmpty)
-        '${filters.includedTags.length} tags',
-    ];
-    return pieces.join(' | ');
-  }
-
-  String _adultLabel(AdultMode mode) {
-    switch (mode) {
-      case AdultMode.off:
-        return 'Off';
-      case AdultMode.mixed:
-        return 'Mixed';
-      case AdultMode.explicitOnly:
-        return 'Explicit';
-    }
   }
 
   bool _isOfflineMessage(String? message) {

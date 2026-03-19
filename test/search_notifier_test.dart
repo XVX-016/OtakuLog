@@ -1,11 +1,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/repositories/search_repository.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
-import 'package:goon_tracker/features/search/search_notifier.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/repositories/search_repository.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
+import 'package:otakulog/features/search/search_notifier.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockSearchRepository extends Mock implements SearchRepository {}

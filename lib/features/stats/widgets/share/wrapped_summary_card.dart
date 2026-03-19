@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
-import 'package:goon_tracker/features/stats/widgets/share/stats_share_card_shell.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/features/stats/widgets/share/stats_share_card_shell.dart';
 import 'package:intl/intl.dart';
 
 class WrappedSummaryCard extends StatelessWidget {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/domain/entities/user.dart';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
   const OnboardingScreen({super.key});

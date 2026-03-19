@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/models/anime_model.dart';
-import 'package:goon_tracker/data/repositories/anime_repository_impl.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
+import 'package:otakulog/data/models/anime_model.dart';
+import 'package:otakulog/data/repositories/anime_repository_impl.dart';
+import 'package:otakulog/domain/entities/anime.dart';
 import 'dart:io';
 
 void main() {

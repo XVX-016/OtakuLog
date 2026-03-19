@@ -111,10 +111,10 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 16px;
     color: var(--red);
-    letter-spacing: 2px;
+    letter-spacing: 3px;
     text-transform: uppercase;
     margin-bottom: 28px;
     opacity: 0;
@@ -270,7 +270,8 @@
     opacity: 0.7;
   }
 
-  .phone img { width: 100%; display: block; }
+  .phone img { width: 100%; height: 100%; display: block; object-fit: cover; }
+  .phone-mobile-only { display: none; }
 
   /* PHONE SCREEN MOCKUP (CSS-drawn) */
   .phone-screen {
@@ -442,17 +443,6 @@
   .feature-card:hover { background: var(--bg2); }
   .feature-card:hover::before { transform: scaleX(1); }
 
-  .feature-icon {
-    width: 40px; height: 40px;
-    background: rgba(232,53,74,0.1);
-    border: 1px solid rgba(232,53,74,0.2);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin-bottom: 24px;
-    font-size: 18px;
-  }
   .feature-num {
     font-family: 'JetBrains Mono', monospace;
     font-size: 10px;
@@ -552,11 +542,12 @@
   }
   .download-size { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
   .download-note {
-    margin-top: 20px;
+    margin: 20px auto 0;
     font-size: 12px;
     color: var(--muted);
     max-width: 400px;
     line-height: 1.6;
+    text-align: center;
   }
   .download-note a { color: var(--text); }
 
@@ -575,7 +566,7 @@
     color: var(--muted);
   }
   .footer-logo span { color: var(--red); }
-  .footer-copy { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; }
+  .footer-copy { font-size: 12px; color: var(--muted); font-family: 'JetBrains Mono', monospace; text-align: center; flex: 1; }
   .footer-links { display: flex; gap: 24px; }
   .footer-links a { font-size: 12px; color: var(--muted); text-decoration: none; transition: color 0.2s; }
   .footer-links a:hover { color: var(--text); }
@@ -604,9 +595,29 @@
     .nav-links { display: none; }
     .hero { grid-template-columns: 1fr; padding: 100px 24px 60px; gap: 48px; }
     .hero::after { display: none; }
-    .hero-right { height: 440px; }
-    .phone-left, .phone-right { display: none; }
-    .phone-main { width: 200px; }
+    .hero-right { height: auto; align-items: stretch; }
+    .phone-wrap {
+      display: flex;
+      gap: 16px;
+      height: auto;
+      overflow-x: auto;
+      padding: 8px 4px 20px;
+      scroll-snap-type: x proximity;
+    }
+    .phone {
+      position: relative;
+      width: 180px;
+      min-width: 180px;
+      aspect-ratio: 9 / 18;
+      left: auto;
+      right: auto;
+      bottom: auto;
+      transform: none;
+      opacity: 1;
+      scroll-snap-align: center;
+    }
+    .phone-main { width: 180px; min-width: 180px; }
+    .phone-mobile-only { display: block; }
     .section { padding: 64px 24px; }
     .features-grid { grid-template-columns: 1fr; }
     .how-section { padding: 64px 24px; }
@@ -669,145 +680,22 @@
 
       <!-- LEFT PHONE: Search -->
       <div class="phone phone-left">
-        <div class="phone-screen">
-          <div class="ps-search" style="margin-top:14px;">
-            <svg class="ps-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            Search for anime...
-          </div>
-          <div class="ps-toggle-row">
-            <div class="ps-toggle on">ANIME</div>
-            <div class="ps-toggle off">MANGA</div>
-            <div class="ps-18">18+</div>
-          </div>
-          <div class="ps-section-label">TRENDING NOW</div>
-          <div class="ps-search-item">
-            <div class="ps-search-cover" style="background:linear-gradient(135deg,#2d1b3d,#5a2d6e)"></div>
-            <div>
-              <div class="ps-search-title">Hell's Paradise S2</div>
-              <div class="ps-search-meta">Anime · 12 eps</div>
-              <div class="ps-search-tags">Action · Adventure · Mystery</div>
-            </div>
-          </div>
-          <div class="ps-search-item">
-            <div class="ps-search-cover" style="background:linear-gradient(135deg,#1a2d4a,#2d5a8e)"></div>
-            <div>
-              <div class="ps-search-title">Frieren: Beyond Journey's End S2</div>
-              <div class="ps-search-meta">Anime · 10 eps</div>
-              <div class="ps-search-tags">Adventure · Drama · Fantasy</div>
-            </div>
-          </div>
-          <div class="ps-search-item">
-            <div class="ps-search-cover" style="background:linear-gradient(135deg,#1a3d2d,#2d8e5a)"></div>
-            <div>
-              <div class="ps-search-title">JUJUTSU KAISEN S3</div>
-              <div class="ps-search-meta">Anime · 12 eps</div>
-              <div class="ps-search-tags">Action · Drama · Supernatural</div>
-            </div>
-          </div>
-          <div class="ps-nav">
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label">Library</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label active-label">Search</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label">Stats</div></div>
-          </div>
-        </div>
+        <img src="Screenshot 2026-03-19 231558.png" alt="OtakuLog search screen">
       </div>
 
-      <!-- MAIN PHONE: Library -->
+      <!-- MAIN PHONE: Home -->
       <div class="phone phone-main">
-        <div class="phone-screen">
-          <div class="ps-header">LIBRARY</div>
-          <div class="ps-tabs">
-            <div class="ps-tab active">✓ All</div>
-            <div class="ps-tab inactive">Anime</div>
-            <div class="ps-tab inactive">Manga</div>
-          </div>
-          <div class="ps-items">
-            <div class="ps-item">
-              <div class="ps-cover" style="background:linear-gradient(135deg,#1a2d4a,#2d5a8e);border-radius:4px;"></div>
-              <div class="ps-info">
-                <div class="ps-title">Frieren: Beyond Journey's End S2</div>
-                <div><span class="ps-badge anime">ANIME</span></div>
-                <div class="ps-prog">Ep 2 / 10</div>
-                <div class="ps-bar"><div class="ps-bar-fill" style="width:20%"></div></div>
-              </div>
-              <div class="ps-status">WATCHING</div>
-            </div>
-            <div class="ps-item">
-              <div class="ps-cover" style="background:linear-gradient(135deg,#2d1b3d,#5a2d6e);border-radius:4px;"></div>
-              <div class="ps-info">
-                <div class="ps-title">Hell's Paradise Season 2</div>
-                <div><span class="ps-badge anime">ANIME</span></div>
-                <div class="ps-prog">Ep 4 / 12</div>
-                <div class="ps-bar"><div class="ps-bar-fill" style="width:33%"></div></div>
-              </div>
-              <div class="ps-status">WATCHING</div>
-            </div>
-            <div class="ps-item">
-              <div class="ps-cover" style="background:linear-gradient(135deg,#2d2d1a,#6e6e2d);border-radius:4px;display:flex;align-items:center;justify-content:center;">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="rgba(255,255,255,0.2)"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
-              </div>
-              <div class="ps-info">
-                <div class="ps-title">Tensei Shitara Ore ga Heroine</div>
-                <div><span class="ps-badge manga">MANGA</span></div>
-                <div class="ps-prog">Ch 0 / ?</div>
-                <div class="ps-bar"><div class="ps-bar-fill" style="width:0%"></div></div>
-              </div>
-              <div class="ps-status">READING</div>
-            </div>
-          </div>
-          <div class="ps-nav">
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label active-label">Library</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label">Search</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label">Stats</div></div>
-          </div>
-        </div>
+        <img src="Screenshot 2026-03-19 231537.png" alt="OtakuLog home screen">
       </div>
 
       <!-- RIGHT PHONE: Stats -->
       <div class="phone phone-right">
-        <div class="phone-screen">
-          <div class="ps-analytics-title">ANALYTICS</div>
-          <div class="ps-big-stat">
-            <div class="ps-big-num">24.6</div>
-            <div class="ps-big-label">TOTAL HOURS</div>
-          </div>
-          <div class="ps-mini-cards">
-            <div class="ps-mini-card">
-              <div class="ps-mini-num">🔥 7</div>
-              <div class="ps-mini-label">DAY STREAK</div>
-            </div>
-            <div class="ps-mini-card">
-              <div class="ps-mini-num">48m</div>
-              <div class="ps-mini-label">TODAY</div>
-            </div>
-          </div>
-          <div class="ps-chart">
-            <div class="ps-chart-label">WEEKLY TRENDS</div>
-            <div class="ps-chart-bars">
-              <div class="ps-chart-bar med" style="height:40%"></div>
-              <div class="ps-chart-bar" style="height:20%"></div>
-              <div class="ps-chart-bar med" style="height:60%"></div>
-              <div class="ps-chart-bar" style="height:30%"></div>
-              <div class="ps-chart-bar med" style="height:50%"></div>
-              <div class="ps-chart-bar active" style="height:100%"></div>
-              <div class="ps-chart-bar" style="height:15%"></div>
-            </div>
-            <div class="ps-chart-days">
-              <div class="ps-chart-day">M</div><div class="ps-chart-day">T</div>
-              <div class="ps-chart-day">W</div><div class="ps-chart-day">T</div>
-              <div class="ps-chart-day">F</div><div class="ps-chart-day">S</div>
-              <div class="ps-chart-day">S</div>
-            </div>
-          </div>
-          <div class="ps-nav">
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg><div class="ps-nav-label">Home</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg><div class="ps-nav-label">Library</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><div class="ps-nav-label">Search</div></div>
-            <div class="ps-nav-item"><svg class="ps-nav-icon active-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M5 3v18l7-3 7 3V3H5z"/></svg><div class="ps-nav-label active-label">Stats</div></div>
-          </div>
-        </div>
+        <img src="Screenshot 2026-03-19 231617.png" alt="OtakuLog stats screen">
+      </div>
+
+      <!-- MOBILE EXTRA PHONE: Library -->
+      <div class="phone phone-mobile-only">
+        <img src="Screenshot 2026-03-19 231546.png" alt="OtakuLog library screen">
       </div>
 
     </div>
@@ -823,38 +711,32 @@
   </div>
   <div class="features-grid reveal">
     <div class="feature-card">
-      <div class="feature-icon">📚</div>
-      <div class="feature-num">01</div>
+            <div class="feature-num">01</div>
       <div class="feature-title">Unified Library</div>
       <div class="feature-desc">Anime and manga in one place. Filter, sort by progress or rating, and see everything at a glance.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">⚡</div>
-      <div class="feature-num">02</div>
+            <div class="feature-num">02</div>
       <div class="feature-title">Fast Logging</div>
       <div class="feature-desc">Tap +1 to log an episode or chapter in under a second. Long-press for bulk logging or status changes.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔍</div>
-      <div class="feature-num">03</div>
+            <div class="feature-num">03</div>
       <div class="feature-title">Smart Search</div>
       <div class="feature-desc">Infinite scroll search powered by AniList and MangaDex. Proper 18+ tag filtering, not just a boolean toggle.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">📊</div>
-      <div class="feature-num">04</div>
+            <div class="feature-num">04</div>
       <div class="feature-title">Real Analytics</div>
       <div class="feature-desc">Total hours, daily streaks, weekly trends. Know exactly how much time you've invested.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🔒</div>
-      <div class="feature-num">05</div>
+            <div class="feature-num">05</div>
       <div class="feature-title">100% Local</div>
       <div class="feature-desc">All data lives on your device with Isar. No account, no cloud, no data harvesting. Ever.</div>
     </div>
     <div class="feature-card">
-      <div class="feature-icon">🌙</div>
-      <div class="feature-num">06</div>
+            <div class="feature-num">06</div>
       <div class="feature-title">Dark-first Design</div>
       <div class="feature-desc">Built for late-night watching sessions. A custom dark theme that doesn't burn your eyes at 2am.</div>
     </div>
@@ -901,7 +783,7 @@
   <div class="reveal" style="margin-top:48px;">
     <div class="download-card">
       <div class="download-platform">Android APK · arm64</div>
-      <a href="#" class="btn-primary" style="font-size:16px;padding:16px 36px;">
+      <a href="https://github.com/XVX-016/OtakuLog" target="_blank" rel="noopener noreferrer" class="btn-primary" style="font-size:16px;padding:16px 36px;">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Download OtakuLog
       </a>
@@ -919,8 +801,9 @@
   <div class="footer-logo">Otaku<span>Log</span></div>
   <div class="footer-copy">// built with Flutter · local-first</div>
   <div class="footer-links">
-    <a href="#">Privacy</a>
-    <a href="#">GitHub</a>
+    <a href="mailto:xvx016xc@gmail.com">Email</a>
+    <a href="https://github.com/XVX-016/OtakuLog" target="_blank" rel="noopener noreferrer">GitHub</a>
+    <a href="https://tanmmay.me/" target="_blank" rel="noopener noreferrer">Contact</a>
     <a href="#download">Download</a>
   </div>
 </footer>

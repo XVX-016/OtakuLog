@@ -17,7 +17,7 @@ class ReminderService {
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
           ?.initialize(settings: android);
     } catch (error) {
-      debugPrint('Reminder init failed: $error');
+      if (kDebugMode) debugPrint('Reminder init failed: $error');
     }
   }
 
@@ -25,7 +25,7 @@ class ReminderService {
     try {
       await _plugin.cancel(id: notificationId);
     } catch (error) {
-      debugPrint('Reminder cancel failed: $error');
+      if (kDebugMode) debugPrint('Reminder cancel failed: $error');
     }
   }
 
@@ -45,9 +45,9 @@ class ReminderService {
         scheduledDate: tz.TZDateTime.from(when, tz.local),
         notificationDetails: const NotificationDetails(
           android: AndroidNotificationDetails(
-            'goontwin_retention',
+            'otakulog_retention',
             'Retention reminders',
-            channelDescription: 'Daily GoonTwin reminders',
+            channelDescription: 'Daily OtakuLog reminders',
             importance: Importance.defaultImportance,
             priority: Priority.defaultPriority,
           ),
@@ -55,7 +55,7 @@ class ReminderService {
         androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       );
     } catch (error) {
-      debugPrint('Reminder schedule failed: $error');
+      if (kDebugMode) debugPrint('Reminder schedule failed: $error');
     }
   }
 }

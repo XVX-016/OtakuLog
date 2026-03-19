@@ -1,4 +1,4 @@
-import 'package:goon_tracker/data/local/retention_preferences_service.dart';
+import 'package:otakulog/data/local/retention_preferences_service.dart';
 
 class WrappedTriggerDecision {
   final bool showWeekly;

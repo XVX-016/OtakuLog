@@ -1,4 +1,4 @@
-import 'package:goon_tracker/data/remote/api_client.dart';
+import 'package:otakulog/data/remote/api_client.dart';
 
 class MangadexClient {
   final ApiClient _client;

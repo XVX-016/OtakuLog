@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/activity_models.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/features/activity_models.dart';
 import 'package:intl/intl.dart';
 
 class ActivityTimelineScreen extends ConsumerWidget {

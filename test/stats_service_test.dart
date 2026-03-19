@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/domain/services/stats_service.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/services/stats_service.dart';
 
 void main() {
   late StatsService statsService;

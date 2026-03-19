@@ -1,4 +1,4 @@
-import 'package:goon_tracker/domain/entities/user_session.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
 
 enum ActivityItemType { anime, manga }
 

@@ -6,6 +6,8 @@ enum SearchSort { trending, popular, updated, score }
 
 enum ContentStatusFilter { any, airing, finished, ongoing, completed }
 
+enum MangaCategoryFilter { any, manga, manhwa, manhua }
+
 const List<String> kCuratedSearchTags = [
   'Ecchi',
   'Harem',
@@ -26,6 +28,7 @@ class SearchFilters {
   final Set<String> excludedTags;
   final ContentStatusFilter status;
   final SearchSort sort;
+  final MangaCategoryFilter mangaCategory;
 
   const SearchFilters({
     this.medium = SearchMedium.anime,
@@ -34,6 +37,7 @@ class SearchFilters {
     this.excludedTags = const {},
     this.status = ContentStatusFilter.any,
     this.sort = SearchSort.trending,
+    this.mangaCategory = MangaCategoryFilter.any,
   });
 
   SearchFilters copyWith({
@@ -43,6 +47,7 @@ class SearchFilters {
     Set<String>? excludedTags,
     ContentStatusFilter? status,
     SearchSort? sort,
+    MangaCategoryFilter? mangaCategory,
   }) {
     return SearchFilters(
       medium: medium ?? this.medium,
@@ -51,6 +56,7 @@ class SearchFilters {
       excludedTags: excludedTags ?? this.excludedTags,
       status: status ?? this.status,
       sort: sort ?? this.sort,
+      mangaCategory: mangaCategory ?? this.mangaCategory,
     );
   }
 
@@ -59,6 +65,8 @@ class SearchFilters {
       medium: medium,
       adultMode: AdultMode.off,
       sort: SearchSort.trending,
+      mangaCategory:
+          medium == SearchMedium.manga ? MangaCategoryFilter.any : MangaCategoryFilter.any,
     );
   }
 
@@ -66,6 +74,7 @@ class SearchFilters {
       adultMode != AdultMode.off ||
       status != ContentStatusFilter.any ||
       sort != SearchSort.trending ||
+      mangaCategory != MangaCategoryFilter.any ||
       includedTags.isNotEmpty ||
       excludedTags.isNotEmpty;
 }

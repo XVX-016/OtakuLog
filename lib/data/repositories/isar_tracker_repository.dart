@@ -1,7 +1,7 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/models/daily_activity.dart';
-import 'package:goon_tracker/domain/entities/activity.dart';
-import 'package:goon_tracker/domain/repositories/tracker_repository.dart';
+import 'package:otakulog/data/models/daily_activity.dart';
+import 'package:otakulog/domain/entities/activity.dart';
+import 'package:otakulog/domain/repositories/tracker_repository.dart';
 
 class IsarTrackerRepository implements TrackerRepository {
   final Isar isar;

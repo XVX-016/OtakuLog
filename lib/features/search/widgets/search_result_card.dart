@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class SearchResultCard extends StatelessWidget {
   final SearchResultItem item;
@@ -143,13 +143,13 @@ class SearchResultCard extends StatelessWidget {
                             vertical: 4,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.green.withOpacity(0.18),
+                            color: const Color(0xFF2E7D32),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: const Text(
                             'In Library',
                             style: TextStyle(
-                              color: Colors.greenAccent,
+                              color: Colors.white,
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
                             ),
@@ -187,7 +187,7 @@ class SearchResultCard extends StatelessWidget {
                     const SizedBox(height: 8),
                     Text(
                       item.description!,
-                      maxLines: 3,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         color: AppTheme.secondaryText,

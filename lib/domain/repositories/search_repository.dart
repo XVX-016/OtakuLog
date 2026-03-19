@@ -1,5 +1,5 @@
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 abstract class SearchRepository {
   Future<List<SearchResultItem>> searchAnime(

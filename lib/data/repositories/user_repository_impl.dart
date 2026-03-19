@@ -1,8 +1,8 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/models/user_model.dart';
-import 'package:goon_tracker/data/mappers/user_mapper.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
-import 'package:goon_tracker/domain/repositories/user_repository.dart';
+import 'package:otakulog/data/models/user_model.dart';
+import 'package:otakulog/data/mappers/user_mapper.dart';
+import 'package:otakulog/domain/entities/user.dart';
+import 'package:otakulog/domain/repositories/user_repository.dart';
 
 class UserRepositoryImpl implements UserRepository {
   final Isar _isar;

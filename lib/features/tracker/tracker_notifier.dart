@@ -1,10 +1,10 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
 
 class TrackerState {
   final Set<String> busyContentIds;

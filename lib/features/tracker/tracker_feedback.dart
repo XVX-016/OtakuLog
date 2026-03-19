@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:otakulog/features/tracker/tracker_notifier.dart';
 
 Future<void> showTrackerFeedback(
   BuildContext context,
@@ -33,6 +33,29 @@ Future<void> showTrackerFeedback(
                     .undoAction(result.undoAction!);
               },
             ),
+    ),
+  );
+}
+
+Future<void> showTrackerMessage(
+  BuildContext context, {
+  required String message,
+}) async {
+  if (!context.mounted) return;
+
+  final messenger = ScaffoldMessenger.of(context);
+  messenger.hideCurrentSnackBar();
+  messenger.showSnackBar(
+    SnackBar(
+      content: Text(
+        message,
+        style: const TextStyle(color: Colors.black87),
+      ),
+      backgroundColor: Colors.white,
+      behavior: SnackBarBehavior.floating,
+      duration: const Duration(seconds: 5),
+      showCloseIcon: true,
+      closeIconColor: Colors.black87,
     ),
   );
 }

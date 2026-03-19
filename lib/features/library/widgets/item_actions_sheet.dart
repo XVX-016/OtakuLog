@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
 
 class ItemActionsSheet extends StatelessWidget {
   final TrackableContent item;

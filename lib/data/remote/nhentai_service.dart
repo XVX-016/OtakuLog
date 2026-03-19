@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class NhentaiService {
   final Dio _dio;
@@ -50,9 +50,10 @@ class NhentaiService {
 
     return items.where((item) {
       final lowerTags = item.tags.map((tag) => tag.toLowerCase()).toSet();
-      final included = filters.includedTags.every(
-        (tag) => lowerTags.contains(tag.toLowerCase()),
-      );
+      final included = filters.includedTags.isEmpty ||
+          filters.includedTags.any(
+            (tag) => lowerTags.contains(tag.toLowerCase()),
+          );
       final excluded = filters.excludedTags.any(
         (tag) => lowerTags.contains(tag.toLowerCase()),
       );
@@ -111,10 +112,12 @@ class NhentaiService {
       id: content.id,
       content: content,
       medium: SearchMedium.manga,
-      tags: searchTags.take(6).toList(),
+      tags: searchTags,
       description: null,
       isAdult: true,
       statusLabel: 'NHENTAI',
+      sourceLabel: 'nhentai',
+      mangaCategory: MangaCategoryFilter.manga,
       creatorNames: creatorNames,
       totalCount: null,
     );

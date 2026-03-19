@@ -1,5 +1,5 @@
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
 
 class SearchResultItem {
   final String id;
@@ -10,6 +10,8 @@ class SearchResultItem {
   final double? score;
   final bool isAdult;
   final String? statusLabel;
+  final String? sourceLabel;
+  final MangaCategoryFilter? mangaCategory;
   final List<String> creatorNames;
   final int? totalCount;
   final bool inLibrary;
@@ -23,6 +25,8 @@ class SearchResultItem {
     this.score,
     this.isAdult = false,
     this.statusLabel,
+    this.sourceLabel,
+    this.mangaCategory,
     this.creatorNames = const [],
     this.totalCount,
     this.inLibrary = false,
@@ -36,6 +40,8 @@ class SearchResultItem {
     double? score,
     bool? isAdult,
     String? statusLabel,
+    String? sourceLabel,
+    MangaCategoryFilter? mangaCategory,
     List<String>? creatorNames,
     int? totalCount,
     bool? inLibrary,
@@ -49,6 +55,8 @@ class SearchResultItem {
       score: score ?? this.score,
       isAdult: isAdult ?? this.isAdult,
       statusLabel: statusLabel ?? this.statusLabel,
+      sourceLabel: sourceLabel ?? this.sourceLabel,
+      mangaCategory: mangaCategory ?? this.mangaCategory,
       creatorNames: creatorNames ?? this.creatorNames,
       totalCount: totalCount ?? this.totalCount,
       inLibrary: inLibrary ?? this.inLibrary,

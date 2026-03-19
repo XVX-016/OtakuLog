@@ -1,10 +1,10 @@
-import 'package:goon_tracker/data/local/retention_preferences_service.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/features/cloud/models/backup_payload.dart';
+import 'package:otakulog/data/local/retention_preferences_service.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/features/cloud/models/backup_payload.dart';
 
 class BackupPreview {
   final DateTime exportedAt;

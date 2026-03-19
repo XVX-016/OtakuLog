@@ -1,4 +1,4 @@
-import 'package:goon_tracker/domain/entities/activity.dart';
+import 'package:otakulog/domain/entities/activity.dart';
 
 abstract class TrackerRepository {
   Future<List<Activity>> getRecentActivity(int days);

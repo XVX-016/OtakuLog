@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
-import 'package:goon_tracker/features/library/widgets/item_actions_sheet.dart';
-import 'package:goon_tracker/features/tracker/tracker_feedback.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
-import 'package:goon_tracker/features/tracker/widgets/log_to_target_sheet.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user.dart';
+import 'package:otakulog/features/library/widgets/item_actions_sheet.dart';
+import 'package:otakulog/features/tracker/tracker_feedback.dart';
+import 'package:otakulog/features/tracker/tracker_notifier.dart';
+import 'package:otakulog/features/tracker/widgets/log_to_target_sheet.dart';
 
 enum LibraryFilter { all, anime, manga }
 
@@ -243,16 +243,18 @@ class LibraryScreen extends ConsumerWidget {
         onTap: () => _openDetails(context, item),
         onLongPress: () => _showItemActions(context, ref, item, user),
         child: GTCard(
+          padding: const EdgeInsets.all(14),
+          borderRadius: BorderRadius.circular(18),
           child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               GTCoverImage(
                 imageUrl: user?.blurCoverInPublic == true ? '' : item.coverImage,
                 title: item.title,
-                width: 70,
-                height: 100,
+                width: 86,
+                height: 124,
                 badge: isAnime ? 'ANIME' : 'MANGA',
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(12),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -315,13 +317,35 @@ class LibraryScreen extends ConsumerWidget {
     TrackableContent item,
     UserEntity? user,
   ) async {
-    await ref.read(localAnalyticsServiceProvider).track('quick_log');
-    ref.invalidate(analyticsSnapshotProvider);
-    final result = item is AnimeEntity
-        ? await ref.read(trackerNotifierProvider.notifier).logAnimeEpisode(item, user: user)
-        : await ref.read(trackerNotifierProvider.notifier).logMangaChapter(item as MangaEntity, user: user);
-    if (context.mounted) {
-      await showTrackerFeedback(context, ref, result);
+    try {
+      await ref.read(localAnalyticsServiceProvider).track('quick_log');
+      ref.invalidate(analyticsSnapshotProvider);
+      final result = item is AnimeEntity
+          ? await ref
+              .read(trackerNotifierProvider.notifier)
+              .logAnimeEpisode(item, user: user)
+          : await ref
+              .read(trackerNotifierProvider.notifier)
+              .logMangaChapter(item as MangaEntity, user: user);
+      if (!context.mounted) return;
+      if (result != null) {
+        await showTrackerFeedback(context, ref, result);
+      } else {
+        await showTrackerMessage(
+          context,
+          message: item is AnimeEntity
+              ? 'Unable to log episode'
+              : 'Unable to log chapter',
+        );
+      }
+    } catch (_) {
+      if (!context.mounted) return;
+      await showTrackerMessage(
+        context,
+        message: item is AnimeEntity
+            ? 'Unable to log episode'
+            : 'Unable to log chapter',
+      );
     }
   }
 

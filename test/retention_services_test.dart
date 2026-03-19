@@ -1,11 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goon_tracker/core/services/wrapped_trigger_service.dart';
-import 'package:goon_tracker/data/local/retention_preferences_service.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/domain/services/recommendation_service.dart';
+import 'package:otakulog/core/services/wrapped_trigger_service.dart';
+import 'package:otakulog/data/local/retention_preferences_service.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/services/recommendation_service.dart';
 
 void main() {
   final service = RecommendationService();

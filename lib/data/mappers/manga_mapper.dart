@@ -1,5 +1,5 @@
-import 'package:goon_tracker/data/models/manga_model.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
+import 'package:otakulog/data/models/manga_model.dart';
+import 'package:otakulog/domain/entities/manga.dart';
 
 class MangaMapper {
   static MangaEntity fromJson(Map<String, dynamic> json) {

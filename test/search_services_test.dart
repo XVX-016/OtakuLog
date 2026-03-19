@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:goon_tracker/data/remote/anilist_service.dart';
-import 'package:goon_tracker/data/remote/mangadex_service.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
+import 'package:otakulog/data/remote/anilist_service.dart';
+import 'package:otakulog/data/remote/mangadex_service.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
 import 'package:mocktail/mocktail.dart';
 
 class _MockDio extends Mock implements Dio {}

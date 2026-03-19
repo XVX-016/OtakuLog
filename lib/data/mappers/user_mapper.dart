@@ -1,5 +1,5 @@
-import 'package:goon_tracker/data/models/user_model.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
+import 'package:otakulog/data/models/user_model.dart';
+import 'package:otakulog/domain/entities/user.dart';
 
 class UserMapper {
   static UserEntity toEntity(UserModel model) {

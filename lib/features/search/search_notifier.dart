@@ -2,10 +2,10 @@ import 'dart:async';
 
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/domain/repositories/search_repository.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/domain/repositories/search_repository.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class SearchState {
   final String query;
@@ -195,9 +195,19 @@ class SearchNotifier extends AutoDisposeNotifier<SearchState> {
     if (error is DioException) {
       if (error.type == DioExceptionType.connectionError ||
           error.type == DioExceptionType.connectionTimeout ||
-          error.type == DioExceptionType.receiveTimeout ||
-          error.type == DioExceptionType.unknown) {
+          error.type == DioExceptionType.receiveTimeout) {
         return 'No network connection. Reconnect to load search and trending.';
+      }
+      if (error.type == DioExceptionType.unknown) {
+        final lowerMessage = (error.message ?? '').toLowerCase();
+        if (lowerMessage.contains('socketexception') ||
+            lowerMessage.contains('connection') ||
+            lowerMessage.contains('network') ||
+            lowerMessage.contains('timed out') ||
+            lowerMessage.contains('handshake')) {
+          return 'No network connection. Reconnect to load search and trending.';
+        }
+        return 'Search request failed. Please try again.';
       }
       final statusCode = error.response?.statusCode;
       if (statusCode != null) {

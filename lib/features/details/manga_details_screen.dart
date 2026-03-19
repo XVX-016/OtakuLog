@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/utils/text_sanitizer.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/features/tracker/tracker_feedback.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/text_sanitizer.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/features/tracker/tracker_feedback.dart';
+import 'package:otakulog/features/tracker/tracker_notifier.dart';
 
 class MangaDetailScreen extends ConsumerWidget {
   final String itemId;
@@ -53,16 +53,7 @@ class _MangaDetailBody extends ConsumerWidget {
       body: CustomScrollView(
         slivers: [
           SliverAppBar(
-            expandedHeight: 300,
             pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              background: GTCoverImage(
-                imageUrl: manga.coverImage,
-                title: manga.title,
-                fit: BoxFit.cover,
-                badge: 'MANGA',
-              ),
-            ),
           ),
           SliverToBoxAdapter(
             child: Padding(
@@ -70,6 +61,29 @@ class _MangaDetailBody extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Center(
+                    child: Container(
+                      width: 156,
+                      height: 228,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.35),
+                            blurRadius: 24,
+                            offset: const Offset(0, 12),
+                          ),
+                        ],
+                      ),
+                      child: GTCoverImage(
+                        imageUrl: manga.coverImage,
+                        title: manga.title,
+                        badge: 'MANGA',
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
                     manga.title,
                     style: Theme.of(context).textTheme.headlineMedium,
@@ -203,18 +217,32 @@ class _MangaDetailBody extends ConsumerWidget {
             ),
             ElevatedButton.icon(
               onPressed: () async {
-                await ref
-                    .read(localAnalyticsServiceProvider)
-                    .track('quick_log');
-                ref.invalidate(analyticsSnapshotProvider);
-                final result = await ref
-                    .read(trackerNotifierProvider.notifier)
-                    .logMangaChapter(
-                      manga,
-                      user: user,
+                try {
+                  await ref
+                      .read(localAnalyticsServiceProvider)
+                      .track('quick_log');
+                  ref.invalidate(analyticsSnapshotProvider);
+                  final result = await ref
+                      .read(trackerNotifierProvider.notifier)
+                      .logMangaChapter(
+                        manga,
+                        user: user,
+                      );
+                  if (!context.mounted) return;
+                  if (result != null) {
+                    await showTrackerFeedback(context, ref, result);
+                  } else {
+                    await showTrackerMessage(
+                      context,
+                      message: 'Unable to log chapter',
                     );
-                if (context.mounted) {
-                  await showTrackerFeedback(context, ref, result);
+                  }
+                } catch (_) {
+                  if (!context.mounted) return;
+                  await showTrackerMessage(
+                    context,
+                    message: 'Unable to log chapter',
+                  );
                 }
               },
               icon: const Icon(Icons.add),

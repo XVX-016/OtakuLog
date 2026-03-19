@@ -1,6 +1,6 @@
 {
-    "name": "goon_tracker",
-    "short_name": "goon_tracker",
+    "name": "OtakuLog",
+    "short_name": "OtakuLog",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

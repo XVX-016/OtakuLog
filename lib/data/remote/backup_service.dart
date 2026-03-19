@@ -1,4 +1,4 @@
-import 'package:goon_tracker/features/cloud/models/backup_payload.dart';
+import 'package:otakulog/features/cloud/models/backup_payload.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class RemoteBackupRecord {

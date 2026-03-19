@@ -1,8 +1,8 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/mappers/anime_mapper.dart';
-import 'package:goon_tracker/data/models/anime_model.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/repositories/anime_repository.dart';
+import 'package:otakulog/data/mappers/anime_mapper.dart';
+import 'package:otakulog/data/models/anime_model.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/repositories/anime_repository.dart';
 
 class AnimeRepositoryImpl implements AnimeRepository {
   final Isar isar;

@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:goon_tracker/app/theme.dart';
+import 'package:otakulog/app/theme.dart';
 
 class StatsShareCardShell extends StatelessWidget {
   final String title;

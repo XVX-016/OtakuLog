@@ -1,8 +1,8 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/data/mappers/manga_mapper.dart';
-import 'package:goon_tracker/data/models/manga_model.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/repositories/manga_repository.dart';
+import 'package:otakulog/data/mappers/manga_mapper.dart';
+import 'package:otakulog/data/models/manga_model.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/repositories/manga_repository.dart';
 
 class MangaRepositoryImpl implements MangaRepository {
   final Isar isar;

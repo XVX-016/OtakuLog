@@ -1,22 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/features/details/anime_details_screen.dart';
-import 'package:goon_tracker/features/debug/analytics_debug_screen.dart';
-import 'package:goon_tracker/features/details/manga_details_screen.dart';
-import 'package:goon_tracker/features/activity_timeline_screen.dart';
-import 'package:goon_tracker/features/home/home_screen.dart';
-import 'package:goon_tracker/features/library/library_screen.dart';
-import 'package:goon_tracker/features/launch_gate_screen.dart';
-import 'package:goon_tracker/features/onboarding/onboarding_screen.dart';
-import 'package:goon_tracker/features/search/search_screen.dart';
-import 'package:goon_tracker/features/settings_v2_screen.dart';
-import 'package:goon_tracker/features/stats/stats_screen.dart';
-import 'package:goon_tracker/features/stats/wrapped_screen.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/features/details/anime_details_screen.dart';
+import 'package:otakulog/features/debug/analytics_debug_screen.dart';
+import 'package:otakulog/features/details/manga_details_screen.dart';
+import 'package:otakulog/features/activity_timeline_screen.dart';
+import 'package:otakulog/features/home/home_screen.dart';
+import 'package:otakulog/features/library/library_screen.dart';
+import 'package:otakulog/features/launch_gate_screen.dart';
+import 'package:otakulog/features/onboarding/onboarding_screen.dart';
+import 'package:otakulog/features/search/search_screen.dart';
+import 'package:otakulog/features/settings_v2_screen.dart';
+import 'package:otakulog/features/stats/stats_screen.dart';
+import 'package:otakulog/features/stats/wrapped_screen.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
 
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>();
 final GlobalKey<NavigatorState> _shellNavigatorKey =

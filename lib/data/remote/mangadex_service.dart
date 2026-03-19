@@ -1,8 +1,8 @@
 import 'package:dio/dio.dart';
-import 'package:goon_tracker/core/utils/text_sanitizer.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/core/utils/text_sanitizer.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class MangadexService {
   final Dio _dio;
@@ -109,7 +109,18 @@ class MangadexService {
     final fallbackMapped = fallbackData
         .map((item) => _mapToResult(item as Map<String, dynamic>))
         .toList();
-    return _applyLocalTagFiltering(fallbackMapped, filters);
+    final fallbackFiltered = _applyLocalTagFiltering(fallbackMapped, filters);
+    if (fallbackFiltered.isNotEmpty) {
+      return fallbackFiltered;
+    }
+
+    final broadParams = _broadSearchParams(params, filters);
+    final broadResponse = await _requestManga(broadParams);
+    final List broadData = broadResponse.data['data'] ?? [];
+    final broadMapped = broadData
+        .map((item) => _mapToResult(item as Map<String, dynamic>))
+        .toList();
+    return _applyLocalTagFiltering(broadMapped, filters);
   }
 
   Future<Response<dynamic>> _requestManga(Map<String, dynamic> queryParams) async {
@@ -182,10 +193,27 @@ class MangadexService {
 
     return items.where((item) {
       final lowerTags = item.tags.map((tag) => tag.toLowerCase()).toSet();
-      final included = filters.includedTags.every((tag) => lowerTags.contains(tag.toLowerCase()));
+      final included = filters.includedTags.isEmpty ||
+          filters.includedTags.any(
+            (tag) => lowerTags.contains(tag.toLowerCase()),
+          );
       final excluded = filters.excludedTags.any((tag) => lowerTags.contains(tag.toLowerCase()));
       return included && !excluded;
     }).toList();
+  }
+
+  Map<String, dynamic> _broadSearchParams(
+    Map<String, dynamic> params,
+    SearchFilters filters,
+  ) {
+    final broad = <String, dynamic>{
+      'limit': params['limit'],
+      'offset': params['offset'],
+      'includes[]': ['cover_art', 'author', 'artist'],
+      if (params['title'] != null) 'title': params['title'],
+    };
+    _applyAdultMode(broad, filters.adultMode);
+    return broad;
   }
 
   SearchResultItem _mapToResult(Map<String, dynamic> json) {
@@ -212,6 +240,7 @@ class MangadexService {
     final creators = _creatorNames(relationships);
     final totalChapters = _parseLastChapter(attributes['lastChapter']);
     final contentRating = (attributes['contentRating'] ?? 'safe').toString();
+    final originalLanguage = (attributes['originalLanguage'] ?? '').toString();
 
     final content = MangaEntity(
       id: id,
@@ -231,14 +260,31 @@ class MangadexService {
       id: id,
       content: content,
       medium: SearchMedium.manga,
-      tags: tags.take(6).toList(),
+      tags: tags,
       description: description,
       score: null,
       isAdult: content.isAdult,
       statusLabel: attributes['status']?.toString(),
+      sourceLabel: 'MangaDex',
+      mangaCategory: _mapMangaCategory(originalLanguage),
       creatorNames: creators,
       totalCount: totalChapters > 0 ? totalChapters : null,
     );
+  }
+
+  MangaCategoryFilter _mapMangaCategory(String languageCode) {
+    switch (languageCode.toLowerCase()) {
+      case 'ko':
+        return MangaCategoryFilter.manhwa;
+      case 'zh':
+      case 'zh-hk':
+      case 'zh-ro':
+      case 'zh-tw':
+        return MangaCategoryFilter.manhua;
+      case 'ja':
+      default:
+        return MangaCategoryFilter.manga;
+    }
   }
 
   String _relationshipFileName(List relationships) {

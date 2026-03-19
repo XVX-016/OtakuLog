@@ -1,5 +1,5 @@
 import 'package:isar/isar.dart';
-import 'package:goon_tracker/domain/entities/activity.dart';
+import 'package:otakulog/domain/entities/activity.dart';
 
 part 'daily_activity.g.dart';
 

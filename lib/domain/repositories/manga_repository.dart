@@ -1,4 +1,4 @@
-import 'package:goon_tracker/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/manga.dart';
 
 abstract class MangaRepository {
   Future<List<MangaEntity>> getAllManga();

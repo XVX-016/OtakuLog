@@ -1,9 +1,9 @@
-import 'package:goon_tracker/data/remote/anilist_service.dart';
-import 'package:goon_tracker/data/remote/mangadex_service.dart';
-import 'package:goon_tracker/data/remote/nhentai_service.dart';
-import 'package:goon_tracker/domain/repositories/search_repository.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
+import 'package:otakulog/data/remote/anilist_service.dart';
+import 'package:otakulog/data/remote/mangadex_service.dart';
+import 'package:otakulog/data/remote/nhentai_service.dart';
+import 'package:otakulog/domain/repositories/search_repository.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class SearchRepositoryImpl implements SearchRepository {
   final AnilistService anilistService;
@@ -38,31 +38,100 @@ class SearchRepositoryImpl implements SearchRepository {
     required int perPage,
     required SearchFilters filters,
   }) async {
-    final mangadexResults = await mangadexService.searchManga(
-      query,
-      page: page,
-      perPage: perPage,
-      filters: filters,
-    );
-
-    if (!_shouldIncludeNhentai(query, filters)) {
-      return mangadexResults;
-    }
+    List<SearchResultItem> mangadexResults = const [];
+    Object? mangadexError;
+    List<SearchResultItem> fallbackResults = const [];
 
     try {
-      final nhentaiResults = await nhentaiService.searchManga(
+      mangadexResults = await mangadexService.searchManga(
+        query,
+        page: page,
+        perPage: perPage,
+        filters: filters,
+      );
+    } catch (error) {
+      mangadexError = error;
+    }
+
+    if (!_shouldIncludeNhentai(query, filters)) {
+      if (mangadexResults.isEmpty) {
+        try {
+          fallbackResults = await anilistService.searchManga(
+            query,
+            page: page,
+            perPage: perPage,
+            filters: filters,
+          );
+        } catch (_) {}
+      }
+      if (mangadexError != null) {
+        if (fallbackResults.isNotEmpty) {
+          return _applyMangaCategoryFilter(fallbackResults, filters);
+        }
+        throw mangadexError;
+      }
+      return _applyMangaCategoryFilter(
+        mangadexResults.isNotEmpty ? mangadexResults : fallbackResults,
+        filters,
+      );
+    }
+
+    List<SearchResultItem> nhentaiResults = const [];
+    try {
+      nhentaiResults = await nhentaiService.searchManga(
         query,
         page: page,
         filters: filters,
       );
-      return _mergeMangaSearchResults(
-        primary: mangadexResults,
+    } catch (_) {
+      if (mangadexError != null && nhentaiResults.isEmpty) {
+        throw mangadexError;
+      }
+      return _applyMangaCategoryFilter(mangadexResults, filters);
+    }
+
+    if (mangadexError != null) {
+      try {
+        fallbackResults = await anilistService.searchManga(
+          query,
+          page: page,
+          perPage: perPage,
+          filters: filters,
+        );
+      } catch (_) {}
+      if (nhentaiResults.isNotEmpty) {
+        return _applyMangaCategoryFilter(
+          _mergeMangaSearchResults(
+          primary: fallbackResults,
+          secondary: nhentaiResults,
+          perPage: perPage,
+          ),
+          filters,
+        );
+      }
+      if (fallbackResults.isNotEmpty) {
+        return _applyMangaCategoryFilter(fallbackResults, filters);
+      }
+      return _applyMangaCategoryFilter(mangadexResults, filters);
+    }
+
+    final baseResults = mangadexResults.isNotEmpty
+        ? mangadexResults
+        : await _safeAniListMangaFallback(
+            query,
+            page: page,
+            perPage: perPage,
+            filters: filters,
+          );
+
+    return _applyMangaCategoryFilter(
+      _mergeMangaSearchResults(
+        primary: baseResults,
         secondary: nhentaiResults,
         perPage: perPage,
-      );
-    } catch (_) {
-      return mangadexResults;
-    }
+      ),
+      filters,
+    );
   }
 
   @override
@@ -84,11 +153,39 @@ class SearchRepositoryImpl implements SearchRepository {
     required int perPage,
     required SearchFilters filters,
   }) async {
-    return await mangadexService.fetchTrendingManga(
+    try {
+      final results = await mangadexService.fetchTrendingManga(
+        page: page,
+        perPage: perPage,
+        filters: filters,
+      );
+      if (results.isNotEmpty) {
+        return _applyMangaCategoryFilter(results, filters);
+      }
+    } catch (_) {}
+
+    return _applyMangaCategoryFilter(
+      await anilistService.fetchTrendingManga(
       page: page,
       perPage: perPage,
       filters: filters,
+      ),
+      filters,
     );
+  }
+
+  List<SearchResultItem> _applyMangaCategoryFilter(
+    List<SearchResultItem> items,
+    SearchFilters filters,
+  ) {
+    if (filters.medium != SearchMedium.manga ||
+        filters.mangaCategory == MangaCategoryFilter.any) {
+      return items;
+    }
+
+    return items
+        .where((item) => item.mangaCategory == filters.mangaCategory)
+        .toList();
   }
 
   bool _shouldIncludeNhentai(String query, SearchFilters filters) {
@@ -127,5 +224,23 @@ class SearchRepositoryImpl implements SearchRepository {
     }
 
     return merged.values.toList();
+  }
+
+  Future<List<SearchResultItem>> _safeAniListMangaFallback(
+    String query, {
+    required int page,
+    required int perPage,
+    required SearchFilters filters,
+  }) async {
+    try {
+      return await anilistService.searchManga(
+        query,
+        page: page,
+        perPage: perPage,
+        filters: filters,
+      );
+    } catch (_) {
+      return const [];
+    }
   }
 }

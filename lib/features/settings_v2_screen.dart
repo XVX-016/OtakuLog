@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/data/remote/backup_mapper.dart';
-import 'package:goon_tracker/features/cloud/models/backup_payload.dart';
-import 'package:goon_tracker/features/cloud/models/cloud_availability_state.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/data/remote/backup_mapper.dart';
+import 'package:otakulog/features/cloud/models/backup_payload.dart';
+import 'package:otakulog/features/cloud/models/cloud_availability_state.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -19,6 +19,7 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   final _nameController = TextEditingController();
+  final _animeController = TextEditingController();
   final _chapterController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -36,6 +37,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void dispose() {
     _nameController.dispose();
+    _animeController.dispose();
     _chapterController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
@@ -46,9 +48,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final userAsync = ref.watch(currentUserProvider);
     final prefsAsync = ref.watch(retentionPreferencesProvider);
-    final authUser = ref.watch(authUserProvider);
-    final cloudState = ref.watch(cloudAvailabilityProvider);
-    final backupPreviewAsync = ref.watch(remoteBackupPreviewProvider);
     final packageInfoAsync = ref.watch(packageInfoProvider);
 
     return Scaffold(
@@ -68,31 +67,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               _label('Profile'),
               const SizedBox(height: 10),
+              _fieldLabel('Display Name'),
+              const SizedBox(height: 8),
               TextField(
                 controller: _nameController,
                 style: const TextStyle(color: AppTheme.primaryText),
-                decoration: _decoration('Display name'),
+                decoration: _decoration('Enter your display name'),
               ),
               const SizedBox(height: 20),
               _label('Defaults'),
               const SizedBox(height: 10),
-              _dropdown<String>(
-                value: _searchMedium,
-                items: const ['anime', 'manga', 'both'],
-                onChanged: (value) => setState(() => _searchMedium = value!),
+              _fieldLabel('Average Minutes Per Episode'),
+              const SizedBox(height: 8),
+              TextField(
+                controller: _animeController,
+                keyboardType: TextInputType.number,
+                style: const TextStyle(color: AppTheme.primaryText),
+                decoration: _decoration('e.g. 24'),
               ),
               const SizedBox(height: 12),
-              _dropdown<String>(
-                value: _adultMode,
-                items: const ['off', 'mixed', 'explicitOnly'],
-                onChanged: (value) => setState(() => _adultMode = value!),
-              ),
-              const SizedBox(height: 12),
+              _fieldLabel('Average Minutes Per Chapter'),
+              const SizedBox(height: 8),
               TextField(
                 controller: _chapterController,
                 keyboardType: TextInputType.number,
                 style: const TextStyle(color: AppTheme.primaryText),
-                decoration: _decoration('Average minutes per chapter'),
+                decoration: _decoration('e.g. 15'),
               ),
               const SizedBox(height: 12),
               SwitchListTile.adaptive(
@@ -125,30 +125,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ElevatedButton(
                 onPressed: _isSaving ? null : () => _save(user),
                 child: Text(_isSaving ? 'SAVING...' : 'SAVE SETTINGS'),
-              ),
-              const SizedBox(height: 32),
-              _label('Cloud Status'),
-              const SizedBox(height: 10),
-              _cloudStatusCard(cloudState),
-              const SizedBox(height: 24),
-              _label('Account'),
-              const SizedBox(height: 10),
-              if (cloudState == CloudAvailabilityState.disabledMissingConfig)
-                _infoCard(
-                  'Cloud is disabled',
-                  'Add SUPABASE_URL and SUPABASE_ANON_KEY to your local .env file to enable backup.',
-                )
-              else if (authUser == null)
-                _authCard()
-              else
-                _signedInCard(authUser.email ?? 'Signed in'),
-              const SizedBox(height: 24),
-              _label('Backup & Restore'),
-              const SizedBox(height: 10),
-              _backupCard(
-                cloudState: cloudState,
-                lastBackupAt: prefsAsync.valueOrNull?.lastBackupAt,
-                backupPreviewAsync: backupPreviewAsync,
               ),
               const SizedBox(height: 24),
               _label('About'),
@@ -211,18 +187,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: TextStyle(color: AppTheme.secondaryText),
           ),
           const SizedBox(height: 16),
+          _fieldLabel('Email'),
+          const SizedBox(height: 8),
           TextField(
             controller: _emailController,
             keyboardType: TextInputType.emailAddress,
             style: const TextStyle(color: AppTheme.primaryText),
-            decoration: _decoration('Email'),
+            decoration: _decoration('name@example.com'),
           ),
           const SizedBox(height: 12),
+          _fieldLabel('Password'),
+          const SizedBox(height: 8),
           TextField(
             controller: _passwordController,
             obscureText: true,
             style: const TextStyle(color: AppTheme.primaryText),
-            decoration: _decoration('Password'),
+            decoration: _decoration('Enter your password'),
           ),
           const SizedBox(height: 16),
           Row(
@@ -426,6 +406,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   void _seed(dynamic user, dynamic prefs) {
     if (_initialized) return;
     _nameController.text = user.displayName;
+    _animeController.text = user.defaultAnimeWatchTime.toString();
     _chapterController.text = user.avgChapterMinutes.toString();
     _adultMode = user.defaultAdultMode;
     _searchMedium = user.defaultSearchMedium;
@@ -444,6 +425,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         updatedAt: DateTime.now(),
         defaultSearchType: _searchMedium,
         defaultContentRating: _adultMode,
+        defaultAnimeWatchTime:
+            int.tryParse(_animeController.text.trim()) ??
+                user.defaultAnimeWatchTime,
         defaultMangaReadTime: int.tryParse(_chapterController.text.trim()) ??
             user.defaultMangaReadTime,
         filter18Plus: _blurCovers,
@@ -693,7 +677,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       'What feels confusing?\n\n'
       'What would you add?\n',
     );
-    final mailto = Uri.parse('mailto:?subject=$subject&body=$body');
+    final mailto = Uri.parse('mailto:xvx016xc@gmail.com?subject=$subject&body=$body');
 
     if (await canLaunchUrl(mailto)) {
       await launchUrl(mailto);
@@ -794,12 +778,29 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  Widget _fieldLabel(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        color: AppTheme.primaryText,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   InputDecoration _decoration(String label) {
     return InputDecoration(
-      labelText: label,
+      hintText: label,
+      hintStyle: const TextStyle(color: AppTheme.secondaryText),
       filled: true,
       fillColor: AppTheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
+      focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14), borderSide: BorderSide.none),
     );
   }

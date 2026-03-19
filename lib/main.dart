@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/app.dart';
-import 'package:goon_tracker/core/config/cloud_config.dart';
-import 'package:goon_tracker/core/config/cloud_runtime.dart';
-import 'package:goon_tracker/core/services/reminder_service.dart';
-import 'package:goon_tracker/data/local/isar_service.dart';
+import 'package:otakulog/app/app.dart';
+import 'package:otakulog/core/config/cloud_config.dart';
+import 'package:otakulog/core/config/cloud_runtime.dart';
+import 'package:otakulog/core/services/reminder_service.dart';
+import 'package:otakulog/data/local/isar_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {

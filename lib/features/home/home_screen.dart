@@ -1,26 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:goon_tracker/app/providers.dart';
-import 'package:goon_tracker/app/theme.dart';
-import 'package:goon_tracker/core/widgets/gt_ui_components.dart';
-import 'package:goon_tracker/domain/entities/anime.dart';
-import 'package:goon_tracker/domain/entities/manga.dart';
-import 'package:goon_tracker/domain/entities/trackable_content.dart';
-import 'package:goon_tracker/domain/entities/user.dart';
-import 'package:goon_tracker/domain/entities/user_session.dart';
-import 'package:goon_tracker/domain/services/recommendation_service.dart';
-import 'package:goon_tracker/domain/services/stats_service.dart';
-import 'package:goon_tracker/features/activity_models.dart';
-import 'package:goon_tracker/features/details/widgets/content_preview_sheet.dart';
-import 'package:goon_tracker/features/search/models/search_filters.dart';
-import 'package:goon_tracker/features/search/models/search_result_item.dart';
-import 'package:goon_tracker/features/search/widgets/search_result_card.dart';
-import 'package:goon_tracker/features/stats/models/wrapped_summary.dart';
-import 'package:goon_tracker/features/stats/widgets/share/share_preview_sheet.dart';
-import 'package:goon_tracker/features/stats/widgets/share/wrapped_summary_card.dart';
-import 'package:goon_tracker/features/tracker/tracker_feedback.dart';
-import 'package:goon_tracker/features/tracker/tracker_notifier.dart';
+import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
+import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/domain/entities/user.dart';
+import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/services/recommendation_service.dart';
+import 'package:otakulog/domain/services/stats_service.dart';
+import 'package:otakulog/features/activity_models.dart';
+import 'package:otakulog/features/details/widgets/content_preview_sheet.dart';
+import 'package:otakulog/features/search/models/search_filters.dart';
+import 'package:otakulog/features/search/models/search_result_item.dart';
+import 'package:otakulog/features/search/widgets/search_result_card.dart';
+import 'package:otakulog/features/stats/models/wrapped_summary.dart';
+import 'package:otakulog/features/stats/widgets/share/share_preview_sheet.dart';
+import 'package:otakulog/features/stats/widgets/share/wrapped_summary_card.dart';
+import 'package:otakulog/features/tracker/tracker_feedback.dart';
+import 'package:otakulog/features/tracker/tracker_notifier.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -225,9 +225,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final todayMinutes =
         dailyActivity[statsService.normalizedDay(DateTime.now())] ?? 0;
     final streak = statsService.calculateStreak(sessions);
+    final hasHistory = sessions.isNotEmpty;
     final milestone = highestMilestone > streak
         ? highestMilestone
         : recommendationService.milestoneForStreak(streak);
+    final streakMessage = _streakMessage(streak, milestone);
     return Row(
       children: [
         Expanded(
@@ -249,30 +251,30 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
                 style: const TextStyle(
                     color: AppTheme.secondaryText, fontSize: 14),
               ),
-              const SizedBox(height: 10),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                decoration: BoxDecoration(
-                    color: AppTheme.surface,
-                    borderRadius: BorderRadius.circular(999)),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.local_fire_department,
-                        color: Colors.orange, size: 18),
-                    const SizedBox(width: 6),
-                    Text(
-                      streak > 0
-                          ? '$streak day streak - ${recommendationService.milestoneLabel(milestone)}'
-                          : 'Start your streak today',
-                      style: const TextStyle(
-                          color: AppTheme.primaryText,
-                          fontWeight: FontWeight.w600),
-                    ),
-                  ],
+              if (hasHistory || streak > 0) ...[
+                const SizedBox(height: 10),
+                Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                      color: AppTheme.surface,
+                      borderRadius: BorderRadius.circular(999)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.local_fire_department,
+                          color: Colors.orange, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        streakMessage,
+                        style: const TextStyle(
+                            color: AppTheme.primaryText,
+                            fontWeight: FontWeight.w600),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
             ],
           ),
         ),
@@ -285,6 +287,25 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
         ),
       ],
     );
+  }
+
+  String _streakMessage(int streak, int milestone) {
+    if (streak <= 0) {
+      return 'Start your streak today';
+    }
+    if (streak == 1) {
+      return '1 day streak - keep it going!';
+    }
+    if (streak < 7) {
+      return '$streak day streak - don\'t break it!';
+    }
+    if (streak < 30) {
+      return '$streak day streak - you\'re on fire!';
+    }
+    if (milestone >= 30) {
+      return '$streak day streak - legendary!';
+    }
+    return '$streak day streak - keep it going!';
   }
 
   Widget _buildContinueAndStats(
@@ -344,7 +365,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
           )
         else
           SizedBox(
-            height: 96,
+            height: 152,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               itemCount: items.take(8).length,
@@ -367,115 +388,114 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
     final progressText = item is AnimeEntity
         ? 'Ep ${item.currentEpisode} / ${total > 0 ? total : '?'}'
         : 'Ch ${(item as MangaEntity).currentChapter} / ${total > 0 ? total : '?'}';
-    final cardWidth = MediaQuery.of(context).size.width * 0.78;
     return SizedBox(
-      width: cardWidth,
+      width: 360,
       child: ConstrainedBox(
-        constraints: const BoxConstraints(minHeight: 80),
-        child: IntrinsicHeight(
-          child: GTCard(
+        constraints: const BoxConstraints(minHeight: 138),
+        child: GTCard(
             onTap: () => _openDetails(context, item),
-            padding: EdgeInsets.zero,
-          child: Row(
-            children: [
-              GTCoverImage(
-                imageUrl: _coverImage(user, item),
-                title: item.title,
-                width: 64,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                badge: item is AnimeEntity ? 'ANIME' : 'MANGA',
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(12),
-                  bottomLeft: Radius.circular(12),
-                ),
-              ),
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        item.title,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(
-                          color: AppTheme.primaryText,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          height: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        progressText,
-                        style: const TextStyle(
-                          color: AppTheme.secondaryText,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      TweenAnimationBuilder<double>(
-                        tween: Tween<double>(begin: 0, end: progress),
-                        duration: const Duration(milliseconds: 220),
-                        builder: (context, value, _) =>
-                            GTProgressBar(progress: value, height: 3),
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppTheme.elevated,
-                          borderRadius: BorderRadius.circular(999),
-                        ),
-                        child: Text(
-                          item is AnimeEntity ? 'WATCHING' : 'READING',
-                          style: const TextStyle(
-                            color: AppTheme.secondaryText,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ),
-                    ],
+            padding: const EdgeInsets.all(14),
+            child: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  GTCoverImage(
+                    imageUrl: _coverImage(user, item),
+                    title: item.title,
+                    width: 84,
+                    height: 122,
+                    fit: BoxFit.cover,
+                    badge: item is AnimeEntity ? 'ANIME' : 'MANGA',
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.only(right: 12),
-                child: AnimatedScale(
-                  scale: isBusy ? 0.96 : 1,
-                  duration: const Duration(milliseconds: 180),
-                  child: SizedBox(
-                    width: 64,
-                    height: 36,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppTheme.accent,
-                        padding: EdgeInsets.zero,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                      ),
-                      onPressed:
-                          isBusy ? null : () => _quickLog(context, item, user),
-                      child: Text(
-                        isBusy ? '...' : quickLabel,
-                        style: const TextStyle(fontSize: 12),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(14, 8, 10, 8),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            item.title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppTheme.primaryText,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                              height: 1.15,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            progressText,
+                            style: const TextStyle(
+                              color: AppTheme.secondaryText,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          TweenAnimationBuilder<double>(
+                            tween: Tween<double>(begin: 0, end: progress),
+                            duration: const Duration(milliseconds: 220),
+                            builder: (context, value, _) =>
+                                GTProgressBar(progress: value, height: 3),
+                          ),
+                          const SizedBox(height: 6),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppTheme.elevated,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              item is AnimeEntity ? 'WATCHING' : 'READING',
+                              style: const TextStyle(
+                                color: AppTheme.secondaryText,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
-                ),
+                  Padding(
+                    padding: const EdgeInsets.only(right: 12),
+                    child: AnimatedScale(
+                      scale: isBusy ? 0.96 : 1,
+                      duration: const Duration(milliseconds: 180),
+                      child: SizedBox(
+                        width: 64,
+                        height: 36,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppTheme.accent,
+                            padding: EdgeInsets.zero,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                          ),
+                          onPressed: isBusy
+                              ? null
+                              : () => _quickLog(context, item, user),
+                          child: Text(
+                            isBusy ? '...' : quickLabel,
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-          ),
-        ),
       ),
     );
   }
@@ -716,18 +736,36 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
 
   Future<void> _quickLog(
       BuildContext context, TrackableContent item, UserEntity? user) async {
-    await ref.read(localAnalyticsServiceProvider).track('quick_log');
-    ref.invalidate(analyticsSnapshotProvider);
-    final result = item is AnimeEntity
-        ? await ref
-            .read(trackerNotifierProvider.notifier)
-            .logAnimeEpisode(item, user: user)
-        : await ref
-            .read(trackerNotifierProvider.notifier)
-            .logMangaChapter(item as MangaEntity, user: user);
-    if (context.mounted) {
-      await showTrackerFeedback(context, ref, result);
+    try {
+      await ref.read(localAnalyticsServiceProvider).track('quick_log');
+      ref.invalidate(analyticsSnapshotProvider);
+      final result = item is AnimeEntity
+          ? await ref
+              .read(trackerNotifierProvider.notifier)
+              .logAnimeEpisode(item, user: user)
+          : await ref
+              .read(trackerNotifierProvider.notifier)
+              .logMangaChapter(item as MangaEntity, user: user);
+      if (!context.mounted) return;
+      if (result != null) {
+        await showTrackerFeedback(context, ref, result);
+      } else {
+        await showTrackerMessage(
+          context,
+          message: item is AnimeEntity
+              ? 'Unable to log episode'
+              : 'Unable to log chapter',
+        );
+      }
       await _refreshRetentionAfterLog();
+    } catch (_) {
+      if (!context.mounted) return;
+      await showTrackerMessage(
+        context,
+        message: item is AnimeEntity
+            ? 'Unable to log episode'
+            : 'Unable to log chapter',
+      );
     }
   }
 

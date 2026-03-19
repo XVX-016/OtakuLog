@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:goon_tracker/app/router.dart';
-import 'package:goon_tracker/app/theme.dart';
+import 'package:otakulog/app/router.dart';
+import 'package:otakulog/app/theme.dart';
 
 class GoonTrackerApp extends ConsumerWidget {
   const GoonTrackerApp({super.key});
