@@ -1,4 +1,0 @@
-storePassword=YOUR_PASSWORD
-keyPassword=YOUR_PASSWORD
-keyAlias=otakulog
-storeFile=release.keystore
