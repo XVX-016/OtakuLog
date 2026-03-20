@@ -2,6 +2,16 @@
 
 A local-first anime and manga tracker built with Flutter. Search via AniList and MangaDex, manage your library, log progress quickly, view wrapped-style stats, and optionally back up to the cloud.
 
+## Screenshots
+
+| Home | Library |
+| --- | --- |
+| ![OtakuLog Home](landing/Screenshot%202026-03-19%20231537.png) | ![OtakuLog Library](landing/Screenshot%202026-03-19%20231546.png) |
+
+| Search | Stats |
+| --- | --- |
+| ![OtakuLog Search](landing/Screenshot%202026-03-19%20231558.png) | ![OtakuLog Stats](landing/Screenshot%202026-03-19%20231617.png) |
+
 ## Prerequisites
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (≥ 3.0.0)
