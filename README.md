@@ -34,17 +34,6 @@ flutter pub get
 dart run build_runner build --delete-conflicting-outputs
 ```
 
-## Environment
-
-Create a local `.env` file for runtime cloud features:
-
-```env
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
-```
-
-Keep admin-only values like the service-role key in `.env.admin`. They are not loaded by the Flutter app.
-
 ## Running the App
 
 ```bash
