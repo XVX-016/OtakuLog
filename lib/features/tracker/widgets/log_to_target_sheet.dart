@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/progress_utils.dart';
 import 'package:otakulog/domain/entities/anime.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
 
 class LogToTargetSheet extends StatefulWidget {
   final TrackableContent content;
   final int minutesPerUnit;
+  final int? maxAvailableProgress;
 
   const LogToTargetSheet({
     super.key,
     required this.content,
     required this.minutesPerUnit,
+    this.maxAvailableProgress,
   });
 
   @override
@@ -23,7 +26,9 @@ class _LogToTargetSheetState extends State<LogToTargetSheet> {
   bool get _isAnime => widget.content is AnimeEntity;
   int get _current => widget.content.currentProgress;
   int get _total => widget.content.totalProgress;
-  int get _max => _total > 0 ? _total : _current + 100;
+  int get _max =>
+      getMaxAllowedProgress(widget.content, releaseCap: widget.maxAvailableProgress) ??
+      (_current + 100);
   int get _delta => (_target - _current).clamp(0, _max).toInt();
 
   @override
@@ -97,7 +102,12 @@ class _LogToTargetSheetState extends State<LogToTargetSheet> {
             ),
             if (_total > 0)
               Text(
-                'Max ${_isAnime ? 'episodes' : 'chapters'}: $_total',
+                'Max ${progressUnitLabel(widget.content)}: $_max',
+                style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+              )
+            else if (widget.maxAvailableProgress != null)
+              Text(
+                'Only $_max ${progressUnitLabel(widget.content)} released so far.',
                 style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
               )
             else

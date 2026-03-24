@@ -4,9 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:otakulog/app/providers.dart';
 import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/data/local/isar_service.dart';
+import 'package:otakulog/data/local/retention_preferences_service.dart';
+import 'package:otakulog/data/models/anime_model.dart';
+import 'package:otakulog/data/models/daily_activity.dart';
+import 'package:otakulog/data/models/manga_model.dart';
+import 'package:otakulog/data/models/user_model.dart';
+import 'package:otakulog/data/models/user_session_model.dart';
 import 'package:otakulog/data/remote/backup_mapper.dart';
 import 'package:otakulog/features/cloud/models/backup_payload.dart';
 import 'package:otakulog/features/cloud/models/cloud_availability_state.dart';
+import 'package:otakulog/features/downloads/download_queue_notifier.dart';
+import 'package:otakulog/features/downloads/downloads_manager_screen.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -27,12 +36,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _searchMedium = 'anime';
   bool _blurCovers = false;
   bool _notificationsEnabled = true;
+  bool _preferDataSaverDownloads = true;
   bool _initialized = false;
   bool _isSaving = false;
   bool _isSigningIn = false;
   bool _isSigningUp = false;
   bool _isBackingUp = false;
   bool _isRestoring = false;
+  bool _isResettingLocalData = false;
 
   @override
   void dispose() {
@@ -95,6 +106,22 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 decoration: _decoration('e.g. 15'),
               ),
               const SizedBox(height: 12),
+              _fieldLabel('Default Search Medium'),
+              const SizedBox(height: 8),
+              _dropdown<String>(
+                value: _searchMedium,
+                items: const ['anime', 'manga'],
+                onChanged: (value) => setState(() => _searchMedium = value!),
+              ),
+              const SizedBox(height: 12),
+              _fieldLabel('Adult Content Preference'),
+              const SizedBox(height: 8),
+              _dropdown<String>(
+                value: _adultMode,
+                items: const ['off', 'mixed', 'explicitOnly'],
+                onChanged: (value) => setState(() => _adultMode = value!),
+              ),
+              const SizedBox(height: 12),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
                 value: _blurCovers,
@@ -121,15 +148,37 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onChanged: (value) =>
                     setState(() => _notificationsEnabled = value),
               ),
+              const SizedBox(height: 12),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _preferDataSaverDownloads,
+                activeThumbColor: AppTheme.accent,
+                title: const Text('Use data-saver chapter downloads',
+                    style: TextStyle(color: AppTheme.primaryText)),
+                subtitle: const Text(
+                  'Downloads lower-size MangaDex pages for offline reading.',
+                  style: TextStyle(color: AppTheme.secondaryText),
+                ),
+                onChanged: (value) =>
+                    setState(() => _preferDataSaverDownloads = value),
+              ),
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: _isSaving ? null : () => _save(user),
                 child: Text(_isSaving ? 'SAVING...' : 'SAVE SETTINGS'),
               ),
               const SizedBox(height: 24),
+              _label('Offline'),
+              const SizedBox(height: 10),
+              _downloadsCard(ref),
+              const SizedBox(height: 24),
               _label('About'),
               const SizedBox(height: 10),
               _aboutCard(packageInfoAsync),
+              const SizedBox(height: 24),
+              _label('Danger Zone'),
+              const SizedBox(height: 10),
+              _dangerZoneCard(),
             ],
           );
         },
@@ -370,10 +419,97 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             style: TextStyle(color: AppTheme.secondaryText, height: 1.5),
           ),
           const SizedBox(height: 16),
-          OutlinedButton.icon(
+          ElevatedButton.icon(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.accent,
+              foregroundColor: Colors.white,
+            ),
             onPressed: _sendFeedback,
             icon: const Icon(Icons.mail_outline),
             label: const Text('SEND FEEDBACK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _downloadsCard(WidgetRef ref) {
+    final totalBytesAsync = ref.watch(totalDownloadedBytesProvider);
+    final downloadsAsync = ref.watch(downloadedChaptersProvider);
+    final count = downloadsAsync.valueOrNull?.length ?? 0;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Offline manga downloads',
+            style: TextStyle(
+              color: AppTheme.primaryText,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            '$count downloaded chapter${count == 1 ? '' : 's'} • ${totalBytesAsync.when(data: DownloadsManagerScreen.formatBytes, loading: () => 'Calculating...', error: (_, __) => 'Unavailable')}',
+            style: const TextStyle(color: AppTheme.secondaryText),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.push('/downloads'),
+              icon: const Icon(Icons.download_done_outlined),
+              label: const Text('MANAGE DOWNLOADS'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _dangerZoneCard() {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Reset local app data',
+            style: TextStyle(
+              color: Colors.redAccent,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Erase this device profile, library, sessions, retention preferences, and local analytics. Cloud backups are not deleted.',
+            style: TextStyle(color: AppTheme.secondaryText, height: 1.5),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFB71C1C),
+                foregroundColor: Colors.white,
+              ),
+              onPressed: _isResettingLocalData ? null : _resetLocalData,
+              child: Text(_isResettingLocalData
+                  ? 'RESETTING...'
+                  : 'RESET LOCAL DATA'),
+            ),
           ),
         ],
       ),
@@ -412,6 +548,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     _searchMedium = user.defaultSearchMedium;
     _blurCovers = user.blurCoverInPublic;
     _notificationsEnabled = prefs?.notificationsEnabled ?? true;
+    _preferDataSaverDownloads = prefs?.preferDataSaverDownloads ?? true;
     _initialized = true;
   }
 
@@ -438,6 +575,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       await ref.read(retentionPreferencesServiceProvider).save(
             prefs.copyWith(
               notificationsEnabled: _notificationsEnabled,
+              preferDataSaverDownloads: _preferDataSaverDownloads,
               lastAppOpenedAtIso: DateTime.now().toIso8601String(),
             ),
           );
@@ -500,6 +638,84 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _showMessage('Signed out');
     } catch (error) {
       _showMessage(_friendlyError(error));
+    }
+  }
+
+  Future<void> _resetLocalData() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppTheme.surface,
+        title: const Text('Reset local data?'),
+        content: const Text(
+          'This will erase all local tracker data on this device and return you to onboarding. Cloud backups stay untouched.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Reset'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isResettingLocalData = true);
+    try {
+      await ref.read(reminderServiceProvider).cancelReminder();
+      await IsarService.instance.writeTxn(() async {
+        await IsarService.instance.animeModels.clear();
+        await IsarService.instance.mangaModels.clear();
+        await IsarService.instance.userSessionModels.clear();
+        await IsarService.instance.userModels.clear();
+        await IsarService.instance.dailyActivitys.clear();
+      });
+      await ref
+          .read(retentionPreferencesServiceProvider)
+          .save(const RetentionPreferences());
+      await ref.read(downloadedChapterStoreProvider).clearAll();
+      await ref.read(localAnalyticsServiceProvider).reset();
+      if (ref.read(authServiceProvider).isAvailable) {
+        await ref.read(authServiceProvider).signOut();
+      }
+
+      ref.invalidate(authSessionProvider);
+      ref.invalidate(authUserProvider);
+      ref.invalidate(currentUserProvider);
+      ref.invalidate(retentionPreferencesProvider);
+      ref.invalidate(analyticsSnapshotProvider);
+      ref.invalidate(combinedLibraryProvider);
+      ref.invalidate(libraryAnimeProvider);
+      ref.invalidate(libraryMangaProvider);
+      ref.invalidate(allSessionsProvider);
+      ref.invalidate(recentSessionsProvider);
+      ref.invalidate(latestSessionByContentProvider);
+      ref.invalidate(activityTimelineProvider);
+      ref.invalidate(dailyActivityProvider);
+      ref.invalidate(monthlyActivityProvider);
+      ref.invalidate(earliestActivityDateProvider);
+      ref.invalidate(userPreferenceProfileProvider);
+      ref.invalidate(recommendationsProvider);
+      ref.invalidate(weeklyWrappedProvider);
+      ref.invalidate(monthlyWrappedProvider);
+      ref.invalidate(wrappedPromptProvider);
+      ref.invalidate(retentionReminderProvider);
+      ref.invalidate(remoteBackupPreviewProvider);
+      ref.invalidate(downloadedChaptersProvider);
+      ref.invalidate(totalDownloadedBytesProvider);
+      ref.invalidate(downloadQueueNotifierProvider);
+
+      if (!mounted) return;
+      _showMessage('Local app data reset');
+      context.go('/launch');
+    } catch (error) {
+      _showMessage(_friendlyError(error));
+    } finally {
+      if (mounted) setState(() => _isResettingLocalData = false);
     }
   }
 

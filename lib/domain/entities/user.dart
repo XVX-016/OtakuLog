@@ -12,7 +12,16 @@ class UserEntity {
 
   String get displayName => name;
   String get defaultSearchMedium => defaultSearchType;
-  String get defaultAdultMode => defaultContentRating == '10' ? 'off' : defaultContentRating;
+  String get defaultAdultMode {
+    switch (defaultContentRating) {
+      case 'mixed':
+      case 'explicitOnly':
+      case 'off':
+        return defaultContentRating;
+      default:
+        return 'off';
+    }
+  }
   int get avgChapterMinutes => defaultMangaReadTime;
   bool get blurCoverInPublic => filter18Plus;
 
@@ -23,9 +32,9 @@ class UserEntity {
     required this.createdAt,
     required this.updatedAt,
     this.defaultSearchType = 'anime',
-    this.defaultContentRating = '10',
+    this.defaultContentRating = 'off',
     this.defaultAnimeWatchTime = 24,
-    this.defaultMangaReadTime = 10,
+    this.defaultMangaReadTime = 15,
     this.filter18Plus = false,
   });
 

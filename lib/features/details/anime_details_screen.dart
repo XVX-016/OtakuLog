@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:otakulog/app/providers.dart';
 import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/progress_utils.dart';
 import 'package:otakulog/core/utils/text_sanitizer.dart';
 import 'package:otakulog/core/widgets/gt_ui_components.dart';
 import 'package:otakulog/domain/entities/anime.dart';
@@ -159,7 +160,16 @@ class _AnimeDetailBody extends ConsumerWidget {
         ? anime.currentEpisode / anime.totalEpisodes
         : 0.0;
     final user = ref.watch(currentUserProvider).valueOrNull;
+    final releaseCap = ref.watch(animeReleaseCapProvider(anime.id)).valueOrNull;
+    final maxAllowedProgress =
+        getMaxAllowedProgress(anime, releaseCap: releaseCap);
+    final isCapped =
+        maxAllowedProgress != null && anime.currentEpisode >= maxAllowedProgress;
     final unitMinutes = user?.defaultAnimeWatchTime ?? 24;
+    final displayTotal = anime.totalEpisodes > 0
+        ? anime.totalEpisodes.toString()
+        : (maxAllowedProgress?.toString() ?? '?');
+    final estimatedMinutes = anime.currentEpisode * unitMinutes;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -177,7 +187,7 @@ class _AnimeDetailBody extends ConsumerWidget {
               ),
             ),
             Text(
-              '${anime.currentEpisode} / ${anime.totalEpisodes > 0 ? anime.totalEpisodes : '?'}',
+              '${anime.currentEpisode} / $displayTotal',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
           ],
@@ -192,31 +202,28 @@ class _AnimeDetailBody extends ConsumerWidget {
             color: AppTheme.accent,
           ),
         ),
-        const SizedBox(height: 24),
+        const SizedBox(height: 10),
+        Text(
+          'Estimated total spent: ${estimatedMinutes}m',
+          style: const TextStyle(
+            color: AppTheme.secondaryText,
+            fontSize: 12,
+          ),
+        ),
+        if (anime.totalEpisodes <= 0 && maxAllowedProgress != null) ...[
+          const SizedBox(height: 6),
+          Text(
+            'Released so far: $maxAllowedProgress episodes',
+            style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+          ),
+        ],
+        const SizedBox(height: 18),
         Row(
           children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'STATION LOG',
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.secondaryText,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Estimated: ${anime.currentEpisode * unitMinutes}m total spent',
-                    style: const TextStyle(fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
             ElevatedButton.icon(
-              onPressed: () async {
+              onPressed: isCapped
+                  ? null
+                  : () async {
                 await ref
                     .read(localAnalyticsServiceProvider)
                     .track('quick_log');
@@ -241,19 +248,28 @@ class _AnimeDetailBody extends ConsumerWidget {
             ),
           ],
         ),
+        if (anime.totalEpisodes <= 0 && maxAllowedProgress != null) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Only $maxAllowedProgress episodes released so far.',
+            style: const TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+          ),
+        ],
       ],
     );
   }
 
   Widget _buildStatusDropdown(BuildContext context, WidgetRef ref) {
     return Container(
+      height: 60,
       padding: const EdgeInsets.symmetric(horizontal: 16),
-        decoration: BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: DropdownButtonHideUnderline(
-          child: DropdownButton<AnimeStatus>(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<AnimeStatus>(
+            isDense: false,
             value: anime.status,
             isExpanded: true,
             dropdownColor: AppTheme.surface,
@@ -266,12 +282,15 @@ class _AnimeDetailBody extends ConsumerWidget {
             selectedItemBuilder: (context) {
               return AnimeStatus.values
                   .map(
-                    (s) => Text(
-                      s.name.toUpperCase(),
-                      style: const TextStyle(
-                        color: AppTheme.primaryText,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
+                    (s) => Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        s.name.toUpperCase(),
+                        style: const TextStyle(
+                          color: AppTheme.primaryText,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
                   )
@@ -290,7 +309,7 @@ class _AnimeDetailBody extends ConsumerWidget {
                 ),
               );
             }).toList(),
-            onChanged: (newStatus) async {
+          onChanged: (newStatus) async {
             if (newStatus != null) {
               final saved = await ref.read(animeRepositoryProvider).saveAnime(
                     anime.copyWith(

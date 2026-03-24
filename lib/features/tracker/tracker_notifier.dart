@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:otakulog/app/providers.dart';
+import 'package:otakulog/core/utils/progress_utils.dart';
 import 'package:otakulog/domain/entities/anime.dart';
 import 'package:otakulog/domain/entities/manga.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
@@ -83,12 +84,19 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
     if (!_startBusy(anime.id)) return null;
 
     try {
+      final releaseCap =
+          await ref.read(animeReleaseCapProvider(anime.id).future);
       final maxAllowed =
-          anime.totalEpisodes > 0 ? anime.totalEpisodes : targetEpisode;
+          getMaxAllowedProgress(anime, releaseCap: releaseCap) ?? targetEpisode;
       final safeTarget =
           targetEpisode.clamp(anime.currentEpisode, maxAllowed).toInt();
       final delta = safeTarget - anime.currentEpisode;
-      if (delta <= 0) return null;
+      if (delta <= 0) {
+        return TrackerActionResult(
+          message: 'Only $maxAllowed ${progressUnitLabel(anime)} released so far',
+          undoneMessage: 'Nothing changed',
+        );
+      }
 
       final now = DateTime.now();
       final sessionId = now.microsecondsSinceEpoch.toString();
@@ -153,12 +161,26 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
     if (!_startBusy(manga.id)) return null;
 
     try {
+      final releaseCap = await ref.read(
+        mangaReleaseCapForMangaProvider(
+          MangaReleaseCapLookup(
+            mangaId: manga.id,
+            coverImageUrl: manga.coverImage,
+            title: manga.title,
+          ),
+        ).future,
+      );
       final maxAllowed =
-          manga.totalChapters > 0 ? manga.totalChapters : targetChapter;
+          getMaxAllowedProgress(manga, releaseCap: releaseCap) ?? targetChapter;
       final safeTarget =
           targetChapter.clamp(manga.currentChapter, maxAllowed).toInt();
       final delta = safeTarget - manga.currentChapter;
-      if (delta <= 0) return null;
+      if (delta <= 0) {
+        return TrackerActionResult(
+          message: 'Only $maxAllowed ${progressUnitLabel(manga)} released so far',
+          undoneMessage: 'Nothing changed',
+        );
+      }
 
       final now = DateTime.now();
       final sessionId = now.microsecondsSinceEpoch.toString();

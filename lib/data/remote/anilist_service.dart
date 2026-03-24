@@ -7,6 +7,7 @@ import 'package:otakulog/features/search/models/search_result_item.dart';
 
 class AnilistService {
   final Dio _dio;
+  final Map<String, int?> _latestReleasedEpisodeCache = {};
 
   static const List<String> _adultTags = [
     'Ecchi',
@@ -35,6 +36,7 @@ class AnilistService {
     title { romaji english native }
     coverImage { large }
     episodes
+    nextAiringEpisode { episode airingAt }
     genres
     description(asHtml: false)
     averageScore
@@ -414,5 +416,45 @@ class AnilistService {
       return DateTime.fromMillisecondsSinceEpoch(value * 1000);
     }
     return DateTime.now();
+  }
+
+  Future<int?> fetchLatestReleasedEpisode(String animeId) async {
+    if (_latestReleasedEpisodeCache.containsKey(animeId)) {
+      return _latestReleasedEpisodeCache[animeId];
+    }
+
+    final response = await _dio.post(
+      '',
+      data: {
+        'query': r'''
+          query ($id: Int) {
+            Media(id: $id, type: ANIME) {
+              episodes
+              nextAiringEpisode {
+                episode
+              }
+              status
+            }
+          }
+        ''',
+        'variables': {
+          'id': int.tryParse(animeId),
+        },
+      },
+    );
+
+    final media = response.data['data']?['Media'] as Map? ?? const {};
+    final episodes = (media['episodes'] as num?)?.toInt();
+    if (episodes != null && episodes > 0) {
+      _latestReleasedEpisodeCache[animeId] = episodes;
+      return episodes;
+    }
+
+    final nextAiring = (media['nextAiringEpisode'] as Map?)?['episode'];
+    final nextAiringEpisode = (nextAiring as num?)?.toInt();
+    final latestReleased =
+        nextAiringEpisode != null && nextAiringEpisode > 1 ? nextAiringEpisode - 1 : null;
+    _latestReleasedEpisodeCache[animeId] = latestReleased;
+    return latestReleased;
   }
 }

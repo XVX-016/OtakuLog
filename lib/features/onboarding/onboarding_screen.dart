@@ -15,7 +15,9 @@ class OnboardingScreen extends ConsumerStatefulWidget {
 class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   final PageController _pageController = PageController();
   final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _timeController =
+  final TextEditingController _animeMinutesController =
+      TextEditingController(text: '24');
+  final TextEditingController _mangaMinutesController =
       TextEditingController(text: '15');
   int _pageIndex = 0;
   String _medium = 'anime';
@@ -26,7 +28,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   void dispose() {
     _pageController.dispose();
     _nameController.dispose();
-    _timeController.dispose();
+    _animeMinutesController.dispose();
+    _mangaMinutesController.dispose();
     super.dispose();
   }
 
@@ -55,102 +58,136 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.topRight,
-                child: TextButton(
-                  onPressed: _isSaving ? null : _skip,
-                  child: const Text('SKIP'),
-                ),
-              ),
-              const Text(
-                'Welcome to OtakuLog',
-                style: TextStyle(
-                    color: AppTheme.primaryText,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'A local-first anime and manga tracker with optional cloud backup.',
-                style: TextStyle(color: AppTheme.secondaryText),
-              ),
-              const SizedBox(height: 20),
-              SizedBox(
-                height: 260,
-                child: PageView.builder(
-                  controller: _pageController,
-                  itemCount: pages.length,
-                  onPageChanged: (value) => setState(() => _pageIndex = value),
-                  itemBuilder: (_, index) => pages[index],
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                children: List.generate(
-                  pages.length,
-                  (index) => Container(
-                    width: 8,
-                    height: 8,
-                    margin: const EdgeInsets.only(right: 8),
-                    decoration: BoxDecoration(
-                      color: index == _pageIndex
-                          ? AppTheme.accent
-                          : AppTheme.elevated,
-                      borderRadius: BorderRadius.circular(999),
-                    ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(24, 24, 24, 28),
+              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Align(
+                        alignment: Alignment.topRight,
+                        child: TextButton(
+                          onPressed: _isSaving ? null : _skip,
+                          child: const Text('SKIP'),
+                        ),
+                      ),
+                      const Text(
+                        'Welcome to OtakuLog',
+                        style: TextStyle(
+                            color: AppTheme.primaryText,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'A local-first anime and manga tracker with optional cloud backup.',
+                        style: TextStyle(color: AppTheme.secondaryText),
+                      ),
+                      const SizedBox(height: 20),
+                      SizedBox(
+                        height: 260,
+                        child: PageView.builder(
+                          controller: _pageController,
+                          itemCount: pages.length,
+                          onPageChanged: (value) => setState(() => _pageIndex = value),
+                          itemBuilder: (_, index) => pages[index],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        children: List.generate(
+                          pages.length,
+                          (index) => Container(
+                            width: 8,
+                            height: 8,
+                            margin: const EdgeInsets.only(right: 8),
+                            decoration: BoxDecoration(
+                              color: index == _pageIndex
+                                  ? AppTheme.accent
+                                  : AppTheme.elevated,
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Quick setup',
+                        style: TextStyle(
+                            color: AppTheme.primaryText,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 12),
+                      _fieldLabel('Display name'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _nameController,
+                        textInputAction: TextInputAction.next,
+                        style: const TextStyle(color: AppTheme.primaryText),
+                        decoration: _decoration('Enter your display name'),
+                      ),
+                      const SizedBox(height: 12),
+                      _fieldLabel('Preferred medium'),
+                      const SizedBox(height: 8),
+                      _dropdown(
+                        value: _medium,
+                        items: const ['anime', 'manga'],
+                        onChanged: (value) => setState(() => _medium = value!),
+                      ),
+                      const SizedBox(height: 12),
+                      _fieldLabel('Adult content preference'),
+                      const SizedBox(height: 8),
+                      _dropdown(
+                        value: _adultMode,
+                        items: const ['off', 'mixed', 'explicitOnly'],
+                        onChanged: (value) => setState(() => _adultMode = value!),
+                      ),
+                      const SizedBox(height: 12),
+                      _fieldLabel('Anime minutes per episode'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _animeMinutesController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.next,
+                        style: const TextStyle(color: AppTheme.primaryText),
+                        decoration: _decoration('e.g. 24'),
+                      ),
+                      const SizedBox(height: 12),
+                      _fieldLabel('Manga minutes per chapter'),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _mangaMinutesController,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) {
+                          if (!_isSaving) {
+                            _save();
+                          }
+                        },
+                        style: const TextStyle(color: AppTheme.primaryText),
+                        decoration: _decoration('e.g. 15'),
+                      ),
+                      const SizedBox(height: 24),
+                      const Spacer(),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: _isSaving ? null : _save,
+                          child: Text(_isSaving ? 'SETTING UP...' : 'START TRACKING'),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),
-              const SizedBox(height: 24),
-              const Text(
-                'Quick setup',
-                style: TextStyle(
-                    color: AppTheme.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _nameController,
-                style: const TextStyle(color: AppTheme.primaryText),
-                decoration: _decoration('Display name'),
-              ),
-              const SizedBox(height: 12),
-              _dropdown(
-                value: _medium,
-                label: 'Preferred medium',
-                items: const ['anime', 'manga'],
-                onChanged: (value) => setState(() => _medium = value!),
-              ),
-              const SizedBox(height: 12),
-              _dropdown(
-                value: _adultMode,
-                label: 'Adult content default',
-                items: const ['off', 'mixed', 'explicitOnly'],
-                onChanged: (value) => setState(() => _adultMode = value!),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: _timeController,
-                keyboardType: TextInputType.number,
-                style: const TextStyle(color: AppTheme.primaryText),
-                decoration: _decoration('Average minutes per chapter/watch'),
-              ),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _isSaving ? null : _save,
-                  child: Text(_isSaving ? 'SETTING UP...' : 'START TRACKING'),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -188,7 +225,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Widget _dropdown({
     required String value,
-    required String label,
     required List<String> items,
     required ValueChanged<String?> onChanged,
   }) {
@@ -212,19 +248,39 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
                   ))
               .toList(),
-          hint: Text(label),
           onChanged: onChanged,
         ),
       ),
     );
   }
 
+  Widget _fieldLabel(String value) {
+    return Text(
+      value,
+      style: const TextStyle(
+        color: AppTheme.primaryText,
+        fontSize: 13,
+        fontWeight: FontWeight.w600,
+      ),
+    );
+  }
+
   InputDecoration _decoration(String label) {
     return InputDecoration(
-      labelText: label,
+      hintText: label,
+      hintStyle: const TextStyle(color: AppTheme.secondaryText),
       filled: true,
       fillColor: AppTheme.surface,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
       border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide.none,
+      ),
+      focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(14),
         borderSide: BorderSide.none,
       ),
@@ -244,12 +300,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         updatedAt: DateTime.now(),
         defaultSearchType: _medium,
         defaultContentRating: _adultMode,
-        defaultAnimeWatchTime: int.tryParse(_timeController.text.trim()) ?? 24,
-        defaultMangaReadTime: int.tryParse(_timeController.text.trim()) ?? 15,
+        defaultAnimeWatchTime:
+            int.tryParse(_animeMinutesController.text.trim()) ?? 24,
+        defaultMangaReadTime:
+            int.tryParse(_mangaMinutesController.text.trim()) ?? 15,
         filter18Plus: false,
       );
       await ref.read(userRepositoryProvider).saveUser(user);
       ref.invalidate(currentUserProvider);
+      ref.invalidate(searchDefaultsProvider);
       if (mounted) context.go('/');
     } finally {
       if (mounted) setState(() => _isSaving = false);
@@ -258,7 +317,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   Future<void> _skip() async {
     _nameController.text = 'Pilot';
-    _timeController.text = '15';
+    _animeMinutesController.text = '24';
+    _mangaMinutesController.text = '15';
     await _save();
   }
 }

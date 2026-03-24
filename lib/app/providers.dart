@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:otakulog/data/local/isar_service.dart';
+import 'package:otakulog/data/local/manga_release_cap_cache_service.dart';
 import 'package:otakulog/data/local/retention_preferences_service.dart';
 import 'package:otakulog/data/remote/auth_service.dart';
 import 'package:otakulog/data/remote/backup_mapper.dart';
@@ -14,6 +15,8 @@ import 'package:otakulog/data/repositories/search_repository_impl.dart';
 import 'package:otakulog/data/repositories/session_repository_impl.dart';
 import 'package:otakulog/data/repositories/user_repository_impl.dart';
 import 'package:otakulog/core/analytics/local_analytics_service.dart';
+import 'package:otakulog/domain/entities/anime.dart';
+import 'package:otakulog/domain/entities/manga.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
 import 'package:otakulog/domain/entities/user.dart';
 import 'package:otakulog/domain/entities/user_session.dart';
@@ -51,6 +54,9 @@ final recommendationServiceProvider =
 final retentionPreferencesServiceProvider =
     Provider<RetentionPreferencesService>(
         (ref) => RetentionPreferencesService());
+final mangaReleaseCapCacheServiceProvider =
+    Provider<MangaReleaseCapCacheService>(
+        (ref) => MangaReleaseCapCacheService());
 final wrappedTriggerServiceProvider =
     Provider<WrappedTriggerService>((ref) => WrappedTriggerService());
 final reminderServiceProvider =
@@ -234,12 +240,83 @@ final libraryMangaProvider = FutureProvider<List<TrackableContent>>((ref) {
   return ref.watch(mangaRepositoryProvider).getAllManga();
 });
 
-final animeByIdProvider = FutureProvider.family((ref, String id) {
+final animeByIdProvider = FutureProvider.family<AnimeEntity?, String>((ref, id) {
   return ref.watch(animeRepositoryProvider).getAnimeById(id);
 });
 
-final mangaByIdProvider = FutureProvider.family((ref, String id) {
+final mangaByIdProvider = FutureProvider.family<MangaEntity?, String>((ref, id) {
   return ref.watch(mangaRepositoryProvider).getMangaById(id);
+});
+
+final animeReleaseCapProvider = FutureProvider.family<int?, String>((ref, id) {
+  return ref.watch(anilistServiceProvider).fetchLatestReleasedEpisode(id);
+});
+
+class MangaReleaseCapLookup {
+  final String mangaId;
+  final String? coverImageUrl;
+  final String title;
+
+  const MangaReleaseCapLookup({
+    required this.mangaId,
+    required this.title,
+    this.coverImageUrl,
+  });
+
+  @override
+  bool operator ==(Object other) {
+    return other is MangaReleaseCapLookup &&
+        other.mangaId == mangaId &&
+        other.coverImageUrl == coverImageUrl &&
+        other.title == title;
+  }
+
+  @override
+  int get hashCode => Object.hash(mangaId, coverImageUrl, title);
+}
+
+final mangaReleaseCapProvider = FutureProvider.family<int?, String>((ref, id) async {
+  final cache = ref.watch(mangaReleaseCapCacheServiceProvider);
+  final latest = await ref.watch(mangadexServiceProvider).fetchLatestChapter(id);
+  if (latest != null) {
+    final cap = latest.floor();
+    await cache.saveForKeys(['id:${id.trim()}'], cap);
+    return cap;
+  }
+  return cache.loadFirst(['id:${id.trim()}']);
+});
+
+final mangaReleaseCapForMangaProvider =
+    FutureProvider.family<int?, MangaReleaseCapLookup>((ref, lookup) async {
+  final service = ref.watch(mangadexServiceProvider);
+  final cache = ref.watch(mangaReleaseCapCacheServiceProvider);
+  final resolvedId = service.resolveMangaDexMangaId(
+    lookup.mangaId,
+    coverImageUrl: lookup.coverImageUrl,
+  );
+  final normalizedTitle = lookup.title
+      .toLowerCase()
+      .replaceAll(RegExp(r'[^a-z0-9]+'), ' ')
+      .replaceAll(RegExp(r'\s+'), ' ')
+      .trim();
+  final cacheKeys = <String>[
+    'id:${lookup.mangaId.trim()}',
+    if (resolvedId != null) 'resolved:$resolvedId',
+    if (normalizedTitle.isNotEmpty) 'title:$normalizedTitle',
+  ];
+
+  final latest = await service.fetchLatestChapter(
+    lookup.mangaId,
+    coverImageUrl: lookup.coverImageUrl,
+    title: lookup.title,
+  );
+  if (latest != null) {
+    final cap = latest.floor();
+    await cache.saveForKeys(cacheKeys, cap);
+    return cap;
+  }
+
+  return cache.loadFirst(cacheKeys);
 });
 
 final combinedLibraryProvider =

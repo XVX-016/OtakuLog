@@ -12,6 +12,49 @@ A local-first anime and manga tracker built with Flutter. Search via AniList and
 | --- | --- |
 | ![OtakuLog Search](landing/Screenshot%202026-03-19%20231558.png) | ![OtakuLog Stats](landing/Screenshot%202026-03-19%20231617.png) |
 
+## Manga Reader Flow
+
+```mermaid
+flowchart TD
+    A[User taps READ]
+    B[resolveMangaDexMangaId<br/>UUID from id or cover URL]
+    C{UUID found?}
+    D[Use directly]
+    E[resolveMangaDexMangaIdForTitle<br/>Search MangaDex by title]
+    F[fetchChapterFeed<br/>GET /manga/{id}/feed]
+    G[Chapter selector sheet]
+    H[fetchChapterPages<br/>GET /at-home/server/{id}]
+    I{Downloaded?}
+    J[Local]
+    K[CDN]
+    L[ReaderScreen / PageView]
+    M[Download queue]
+    N[Download pages<br/>Save to documents dir]
+    O[Manifest updated]
+
+    A --> B --> C
+    C -- Yes --> D --> F
+    C -- No --> E --> F
+    F --> G
+    G -- Read --> H
+    H --> I
+    I -- Yes --> J --> L
+    I -- No --> K --> L
+    G -- Download --> M --> N --> O
+
+    classDef resolve fill:#4a3f96,stroke:#8b7cff,color:#ffffff
+    classDef api fill:#105d4d,stroke:#52c7a5,color:#ffffff
+    classDef download fill:#7a4a00,stroke:#f6a623,color:#ffffff
+    classDef local fill:#335d0b,stroke:#8cc84b,color:#ffffff
+    classDef neutral fill:#4a4a46,stroke:#bfbfbf,color:#ffffff
+
+    class A,G neutral
+    class B,E resolve
+    class D,F,H,K,L api
+    class M,N download
+    class J,O local
+```
+
 ## Prerequisites
 
 - [Flutter SDK](https://docs.flutter.dev/get-started/install) (≥ 3.0.0)

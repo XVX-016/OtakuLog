@@ -5,11 +5,14 @@ import 'package:otakulog/app/providers.dart';
 import 'package:otakulog/features/details/anime_details_screen.dart';
 import 'package:otakulog/features/debug/analytics_debug_screen.dart';
 import 'package:otakulog/features/details/manga_details_screen.dart';
+import 'package:otakulog/features/downloads/downloads_manager_screen.dart';
 import 'package:otakulog/features/activity_timeline_screen.dart';
 import 'package:otakulog/features/home/home_screen.dart';
 import 'package:otakulog/features/library/library_screen.dart';
 import 'package:otakulog/features/launch_gate_screen.dart';
 import 'package:otakulog/features/onboarding/onboarding_screen.dart';
+import 'package:otakulog/features/reader/manga_reader_notifier.dart';
+import 'package:otakulog/features/reader/manga_reader_screen.dart';
 import 'package:otakulog/features/search/search_screen.dart';
 import 'package:otakulog/features/settings_v2_screen.dart';
 import 'package:otakulog/features/stats/stats_screen.dart';
@@ -67,6 +70,10 @@ final router = GoRouter(
       builder: (context, state) => const ActivityTimelineScreen(),
     ),
     GoRoute(
+      path: '/downloads',
+      builder: (context, state) => const DownloadsManagerScreen(),
+    ),
+    GoRoute(
       path: '/debug/analytics',
       builder: (context, state) => const AnalyticsDebugScreen(),
     ),
@@ -75,6 +82,13 @@ final router = GoRouter(
       builder: (context, state) {
         final summary = state.extra as WrappedSummary;
         return WrappedScreen(summary: summary);
+      },
+    ),
+    GoRoute(
+      path: '/reader/manga',
+      builder: (context, state) {
+        final args = state.extra as MangaReaderArgs;
+        return MangaReaderScreen(args: args);
       },
     ),
     GoRoute(

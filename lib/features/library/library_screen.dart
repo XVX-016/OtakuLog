@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:otakulog/app/providers.dart';
 import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/progress_utils.dart';
 import 'package:otakulog/core/widgets/gt_ui_components.dart';
 import 'package:otakulog/domain/entities/anime.dart';
 import 'package:otakulog/domain/entities/manga.dart';
@@ -229,8 +230,24 @@ class LibraryScreen extends ConsumerWidget {
     final anime = item is AnimeEntity ? item : null;
     final manga = item is MangaEntity ? item : null;
     final isAnime = anime != null;
-    final canLogMore = item.totalProgress <= 0 || item.currentProgress < item.totalProgress;
-    final total = item.totalProgress;
+    final releaseCapAsync = isAnime
+        ? ref.watch(animeReleaseCapProvider(item.id))
+        : ref.watch(
+            mangaReleaseCapForMangaProvider(
+              MangaReleaseCapLookup(
+                mangaId: manga!.id,
+                coverImageUrl: manga.coverImage,
+                title: manga.title,
+              ),
+            ),
+          );
+    final releaseCap = releaseCapAsync.valueOrNull;
+    final maxAllowedProgress =
+        getMaxAllowedProgress(item, releaseCap: releaseCap);
+    final canLogMore = maxAllowedProgress == null
+        ? item.totalProgress <= 0 || item.currentProgress < item.totalProgress
+        : item.currentProgress < maxAllowedProgress;
+    final total = item.totalProgress > 0 ? item.totalProgress : (maxAllowedProgress ?? 0);
     final progressText = isAnime
         ? 'Ep ${item.currentProgress} / ${total > 0 ? total : '?'}'
         : 'Ch ${item.currentProgress} / ${total > 0 ? total : '?'}';
@@ -283,6 +300,16 @@ class LibraryScreen extends ConsumerWidget {
                       statusText.toUpperCase(),
                       style: const TextStyle(color: AppTheme.secondaryText, fontSize: 11),
                     ),
+                    if (releaseCap != null && item.totalProgress <= 0) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        'Released so far: $releaseCap',
+                        style: const TextStyle(
+                          color: AppTheme.secondaryText,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -355,15 +382,32 @@ class LibraryScreen extends ConsumerWidget {
     TrackableContent item,
     UserEntity? user,
   ) async {
+    final releaseCap = item is AnimeEntity
+        ? await ref.read(animeReleaseCapProvider(item.id).future)
+        : await ref.read(
+            mangaReleaseCapForMangaProvider(
+              MangaReleaseCapLookup(
+                mangaId: (item as MangaEntity).id,
+                coverImageUrl: item.coverImage,
+                title: item.title,
+              ),
+            ).future,
+          );
+    final maxAllowedProgress =
+        getMaxAllowedProgress(item, releaseCap: releaseCap);
+
     await showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       builder: (sheetContext) => ItemActionsSheet(
         item: item,
-        onQuickLog: () async {
-          Navigator.pop(sheetContext);
-          await _quickLog(context, ref, item, user);
-        },
+        onQuickLog: maxAllowedProgress != null &&
+                item.currentProgress >= maxAllowedProgress
+            ? null
+            : () async {
+                Navigator.pop(sheetContext);
+                await _quickLog(context, ref, item, user);
+              },
         onLogToTarget: () async {
           Navigator.pop(sheetContext);
           await _showLogToTarget(context, ref, item, user);
@@ -386,6 +430,10 @@ class LibraryScreen extends ConsumerWidget {
             await showTrackerFeedback(context, ref, result);
           }
         },
+        quickLogHint: maxAllowedProgress != null &&
+                item.currentProgress >= maxAllowedProgress
+            ? 'Caught up to the latest released ${item is AnimeEntity ? 'episode' : 'chapter'}.'
+            : null,
       ),
     );
   }
@@ -404,9 +452,26 @@ class LibraryScreen extends ConsumerWidget {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => LogToTargetSheet(
-        content: item,
-        minutesPerUnit: item is AnimeEntity ? (user?.defaultAnimeWatchTime ?? 24) : (user?.avgChapterMinutes ?? 15),
+      builder: (_) => FutureBuilder<int?>(
+        future: item is AnimeEntity
+            ? ref.read(animeReleaseCapProvider(item.id).future)
+            : ref.read(
+                mangaReleaseCapForMangaProvider(
+                  MangaReleaseCapLookup(
+                    mangaId: (item as MangaEntity).id,
+                    coverImageUrl: item.coverImage,
+                    title: item.title,
+                  ),
+                ).future,
+              ),
+        builder: (context, snapshot) {
+          final maxAvailableProgress = snapshot.data;
+          return LogToTargetSheet(
+            content: item,
+            minutesPerUnit: item is AnimeEntity ? (user?.defaultAnimeWatchTime ?? 24) : (user?.avgChapterMinutes ?? 15),
+            maxAvailableProgress: maxAvailableProgress,
+          );
+        },
       ),
     );
 

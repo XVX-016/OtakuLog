@@ -15,6 +15,7 @@ class RetentionPreferences {
   final int highestUnlockedStreakMilestone;
   final String? lastReminderScheduledForIso;
   final String? lastBackupAtIso;
+  final bool preferDataSaverDownloads;
   final List<Map<String, dynamic>> cachedRecommendations;
 
   const RetentionPreferences({
@@ -29,6 +30,7 @@ class RetentionPreferences {
     this.highestUnlockedStreakMilestone = 0,
     this.lastReminderScheduledForIso,
     this.lastBackupAtIso,
+    this.preferDataSaverDownloads = true,
     this.cachedRecommendations = const [],
   });
 
@@ -55,6 +57,7 @@ class RetentionPreferences {
     int? highestUnlockedStreakMilestone,
     String? lastReminderScheduledForIso,
     String? lastBackupAtIso,
+    bool? preferDataSaverDownloads,
     List<Map<String, dynamic>>? cachedRecommendations,
   }) {
     return RetentionPreferences(
@@ -77,6 +80,8 @@ class RetentionPreferences {
       lastReminderScheduledForIso:
           lastReminderScheduledForIso ?? this.lastReminderScheduledForIso,
       lastBackupAtIso: lastBackupAtIso ?? this.lastBackupAtIso,
+      preferDataSaverDownloads:
+          preferDataSaverDownloads ?? this.preferDataSaverDownloads,
       cachedRecommendations: cachedRecommendations ?? this.cachedRecommendations,
     );
   }
@@ -94,6 +99,7 @@ class RetentionPreferences {
       'highestUnlockedStreakMilestone': highestUnlockedStreakMilestone,
       'lastReminderScheduledForIso': lastReminderScheduledForIso,
       'lastBackupAtIso': lastBackupAtIso,
+      'preferDataSaverDownloads': preferDataSaverDownloads,
       'cachedRecommendations': cachedRecommendations,
     };
   }
@@ -114,6 +120,7 @@ class RetentionPreferences {
           (json['highestUnlockedStreakMilestone'] as num?)?.toInt() ?? 0,
       lastReminderScheduledForIso: json['lastReminderScheduledForIso']?.toString(),
       lastBackupAtIso: json['lastBackupAtIso']?.toString(),
+      preferDataSaverDownloads: json['preferDataSaverDownloads'] != false,
       cachedRecommendations:
           (json['cachedRecommendations'] as List? ?? const []).whereType<Map>().map((item) {
         return item.map((key, value) => MapEntry(key.toString(), value));

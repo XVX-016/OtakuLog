@@ -5,11 +5,12 @@ import 'package:otakulog/domain/entities/trackable_content.dart';
 
 class ItemActionsSheet extends StatelessWidget {
   final TrackableContent item;
-  final VoidCallback onQuickLog;
+  final VoidCallback? onQuickLog;
   final VoidCallback onLogToTarget;
   final VoidCallback onMarkCompleted;
   final VoidCallback onUpdateRating;
   final VoidCallback onRemove;
+  final String? quickLogHint;
 
   const ItemActionsSheet({
     super.key,
@@ -19,6 +20,7 @@ class ItemActionsSheet extends StatelessWidget {
     required this.onMarkCompleted,
     required this.onUpdateRating,
     required this.onRemove,
+    this.quickLogHint,
   });
 
   @override
@@ -51,6 +53,7 @@ class ItemActionsSheet extends StatelessWidget {
               icon: Icons.add_circle_outline,
               label: '+1 ${unitLabel[0].toUpperCase()}${unitLabel.substring(1)}',
               onTap: onQuickLog,
+              subtitle: quickLogHint,
             ),
             _actionTile(
               icon: Icons.flag_outlined,
@@ -82,16 +85,27 @@ class ItemActionsSheet extends StatelessWidget {
   Widget _actionTile({
     required IconData icon,
     required String label,
-    required VoidCallback onTap,
+    required VoidCallback? onTap,
     Color color = AppTheme.primaryText,
+    String? subtitle,
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      leading: Icon(icon, color: color),
+      enabled: onTap != null,
+      leading: Icon(icon, color: onTap != null ? color : AppTheme.secondaryText),
       title: Text(
         label,
-        style: TextStyle(color: color, fontWeight: FontWeight.w600),
+        style: TextStyle(
+          color: onTap != null ? color : AppTheme.secondaryText,
+          fontWeight: FontWeight.w600,
+        ),
       ),
+      subtitle: subtitle == null
+          ? null
+          : Text(
+              subtitle,
+              style: const TextStyle(color: AppTheme.secondaryText),
+            ),
       onTap: onTap,
     );
   }
