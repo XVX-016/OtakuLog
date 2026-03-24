@@ -233,13 +233,18 @@ class _MangaDetailBody extends ConsumerWidget {
           ),
         ],
         const SizedBox(height: 18),
-        Row(
-          children: [
-            Expanded(
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final isCompact = constraints.maxWidth < 430;
+            final readButton = SizedBox(
+              height: 50,
               child: ElevatedButton.icon(
                 onPressed: () => _openReader(context, ref),
                 icon: const Icon(Icons.menu_book_outlined),
-                label: const Text('READ'),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('READ'),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.accent,
                   padding: const EdgeInsets.symmetric(
@@ -248,9 +253,9 @@ class _MangaDetailBody extends ConsumerWidget {
                   ),
                 ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
+            );
+            final logButton = SizedBox(
+              height: 50,
               child: ElevatedButton.icon(
                 onPressed: isCapped
                     ? null
@@ -284,7 +289,10 @@ class _MangaDetailBody extends ConsumerWidget {
                         }
                       },
                 icon: const Icon(Icons.add),
-                label: const Text('LOG CHAPTER'),
+                label: const FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Text('LOG CHAPTER'),
+                ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.green[800],
                   padding: const EdgeInsets.symmetric(
@@ -293,8 +301,26 @@ class _MangaDetailBody extends ConsumerWidget {
                   ),
                 ),
               ),
-            ),
-          ],
+            );
+
+            if (isCompact) {
+              return Column(
+                children: [
+                  SizedBox(width: double.infinity, child: readButton),
+                  const SizedBox(height: 12),
+                  SizedBox(width: double.infinity, child: logButton),
+                ],
+              );
+            }
+
+            return Row(
+              children: [
+                Expanded(child: readButton),
+                const SizedBox(width: 12),
+                Expanded(child: logButton),
+              ],
+            );
+          },
         ),
         if (manga.totalChapters <= 0 && maxAllowedProgress != null) ...[
           const SizedBox(height: 8),
@@ -553,6 +579,8 @@ class _ChapterSelectorSheetState extends ConsumerState<_ChapterSelectorSheet>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isCompact = screenWidth < 720;
     final maxHeight = MediaQuery.of(context).size.height * 0.72;
     final downloadsAsync = ref.watch(downloadedChaptersProvider);
     final queueState = ref.watch(downloadQueueNotifierProvider);
@@ -599,36 +627,42 @@ class _ChapterSelectorSheetState extends ConsumerState<_ChapterSelectorSheet>
       top: false,
       child: Align(
         alignment: Alignment.bottomCenter,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 680),
-          child: Container(
-        decoration: const BoxDecoration(
-          color: AppTheme.surface,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        ),
-        padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
-        child: SizedBox(
-          height: maxHeight,
-          child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Choose a chapter',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: AppTheme.accent,
-                    fontWeight: FontWeight.w700,
-                  ),
+        child: Container(
+          width: isCompact ? double.infinity : null,
+          margin: isCompact ? EdgeInsets.zero : const EdgeInsets.symmetric(horizontal: 20),
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: isCompact ? screenWidth : 680,
             ),
-            const SizedBox(height: 6),
-            Text(
-              widget.manga.title,
-              style: const TextStyle(color: AppTheme.secondaryText),
-            ),
-            const SizedBox(height: 16),
-            Expanded(
-              child: FutureBuilder<List<MangaDexChapter>>(
-                future: _chapterFeedFuture,
-                builder: (context, snapshot) {
+            child: Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              child: SizedBox(
+                height: maxHeight,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Choose a chapter',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                            color: AppTheme.accent,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      widget.manga.title,
+                      style: const TextStyle(color: AppTheme.secondaryText),
+                    ),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: FutureBuilder<List<MangaDexChapter>>(
+                        future: _chapterFeedFuture,
+                        builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     if (offlineChapters.isNotEmpty) {
                       return _OfflineChapterList(
@@ -772,14 +806,15 @@ class _ChapterSelectorSheetState extends ConsumerState<_ChapterSelectorSheet>
                       );
                     },
                   );
-                },
+                        },
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ],
           ),
         ),
-      ),
-      ),
       ),
     );
   }
@@ -915,6 +950,11 @@ String? _chapterSecondaryText(MangaDexChapter chapter) {
 String _chapterPrimaryLabel(MangaDexChapter chapter) {
   if (chapter.chapterText.trim().isNotEmpty) {
     return 'Ch. ${chapter.chapterText.trim()}';
+  }
+  final match = RegExp(r'Ch\.\s*([0-9]+(?:\.[0-9]+)?)', caseSensitive: false)
+      .firstMatch(chapter.chapterLabel);
+  if (match != null) {
+    return 'Ch. ${match.group(1)!}';
   }
   return chapter.chapterLabel;
 }

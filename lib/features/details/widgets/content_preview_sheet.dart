@@ -3,13 +3,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:otakulog/app/providers.dart';
 import 'package:otakulog/app/theme.dart';
+import 'package:otakulog/core/utils/progress_utils.dart';
 import 'package:otakulog/core/utils/text_sanitizer.dart';
 import 'package:otakulog/core/widgets/gt_ui_components.dart';
+import 'package:otakulog/data/remote/mangadex_service.dart';
 import 'package:otakulog/domain/entities/anime.dart';
 import 'package:otakulog/domain/entities/manga.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
+import 'package:otakulog/features/reader/manga_reader_notifier.dart';
 import 'package:otakulog/features/search/models/search_result_item.dart';
 import 'package:otakulog/features/search/search_notifier.dart';
+import 'package:otakulog/features/tracker/tracker_feedback.dart';
+import 'package:otakulog/features/tracker/tracker_notifier.dart';
 
 class ContentPreviewSheet extends ConsumerStatefulWidget {
   final TrackableContent? content;
@@ -78,6 +83,25 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
     final metadata = widget.searchItem;
     final sanitizedDescription =
         stripHtmlTags(metadata?.description ?? _content.description ?? '');
+    final manga = _content is MangaEntity ? _content as MangaEntity : null;
+    final releaseCap = manga == null
+        ? null
+        : ref
+            .watch(
+              mangaReleaseCapForMangaProvider(
+                MangaReleaseCapLookup(
+                  mangaId: manga.id,
+                  coverImageUrl: manga.coverImage,
+                  title: manga.title,
+                ),
+              ),
+            )
+            .valueOrNull;
+    final maxAllowedProgress = manga == null
+        ? null
+        : getMaxAllowedProgress(manga, releaseCap: releaseCap);
+    final canLogManga = manga != null &&
+        (maxAllowedProgress == null || manga.currentChapter < maxAllowedProgress);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
@@ -210,6 +234,14 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
               Text('STATUS', style: _sectionLabelStyle()),
               const SizedBox(height: 8),
               _buildStatusDropdown(),
+              if (manga != null) ...[
+                const SizedBox(height: 16),
+                _buildMangaActionRow(
+                  context,
+                  manga,
+                  canLogManga: canLogManga,
+                ),
+              ],
               const SizedBox(height: 16),
               Text('INITIAL RATING', style: _sectionLabelStyle()),
               const SizedBox(height: 4),
@@ -231,8 +263,12 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
                   children: [
                     SizedBox(
                       width: double.infinity,
-                      child: OutlinedButton(
+                      child: ElevatedButton(
                         onPressed: () => _openInLibrary(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.white,
+                          foregroundColor: AppTheme.accent,
+                        ),
                         child: const Text('OPEN IN LIBRARY'),
                       ),
                     ),
@@ -362,6 +398,68 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
     );
   }
 
+  Widget _buildMangaActionRow(
+    BuildContext context,
+    MangaEntity manga, {
+    required bool canLogManga,
+  }) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 430;
+        final buttons = <Widget>[
+          SizedBox(
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving ? null : () => _openMangaReader(context, manga),
+              icon: const Icon(Icons.menu_book_outlined),
+              label: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('READ'),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.accent,
+              ),
+            ),
+          ),
+          SizedBox(
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _isSaving || !canLogManga
+                  ? null
+                  : () => _quickLogManga(context, manga),
+              icon: const Icon(Icons.add),
+              label: const FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text('LOG CHAPTER'),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green[800],
+              ),
+            ),
+          ),
+        ];
+
+        if (isCompact) {
+          return Column(
+            children: [
+              SizedBox(width: double.infinity, child: buttons[0]),
+              const SizedBox(height: 12),
+              SizedBox(width: double.infinity, child: buttons[1]),
+            ],
+          );
+        }
+
+        return Row(
+          children: [
+            Expanded(child: buttons[0]),
+            const SizedBox(width: 12),
+            Expanded(child: buttons[1]),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _addToLibrary(BuildContext context) async {
     setState(() => _isSaving = true);
     var added = false;
@@ -484,6 +582,68 @@ class _ContentPreviewSheetState extends ConsumerState<ContentPreviewSheet> {
           ),
         );
       }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
+  Future<MangaEntity> _ensureMangaSaved(MangaEntity manga) async {
+    final existing = await ref.read(mangaRepositoryProvider).getMangaById(manga.id);
+    if (existing != null) {
+      if (existing.totalChapters > 0) return existing;
+      final enriched = existing.copyWith(
+        totalChapters: _resolvedTotalChapters,
+      );
+      await ref.read(mangaRepositoryProvider).saveManga(enriched);
+      ref.invalidate(libraryMangaProvider);
+      ref.invalidate(combinedLibraryProvider);
+      ref.invalidate(searchNotifierProvider);
+      return enriched;
+    }
+
+    final toSave = manga.copyWith(
+      totalChapters: _resolvedTotalChapters,
+      status: _mangaStatus ?? MangaStatus.reading,
+      rating: _rating,
+    );
+    await ref.read(mangaRepositoryProvider).saveManga(toSave);
+    ref.invalidate(libraryMangaProvider);
+    ref.invalidate(combinedLibraryProvider);
+    ref.invalidate(searchNotifierProvider);
+    return toSave;
+  }
+
+  Future<void> _openMangaReader(BuildContext context, MangaEntity manga) async {
+    final savedManga = await _ensureMangaSaved(manga);
+    if (!mounted || !context.mounted) return;
+    Navigator.pop(context);
+    context.push('/content/${savedManga.id}/manga');
+  }
+
+  Future<void> _quickLogManga(BuildContext context, MangaEntity manga) async {
+    setState(() => _isSaving = true);
+    try {
+      final savedManga = await _ensureMangaSaved(manga);
+      final result = await ref.read(trackerNotifierProvider.notifier).logMangaChapter(
+            savedManga,
+            user: ref.read(currentUserProvider).valueOrNull,
+          );
+      if (!mounted || !context.mounted) return;
+      Navigator.pop(context);
+      if (result != null) {
+        await showTrackerFeedback(context, ref, result);
+      } else {
+        await showTrackerMessage(
+          context,
+          message: 'Unable to log chapter',
+        );
+      }
+    } catch (_) {
+      if (!mounted || !context.mounted) return;
+      await showTrackerMessage(
+        context,
+        message: 'Unable to log chapter',
+      );
     } finally {
       if (mounted) setState(() => _isSaving = false);
     }
