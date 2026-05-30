@@ -73,6 +73,8 @@ class MangaMapper {
         return MangaCategoryFilter.manhwa;
       case 'zh':
       case 'zh-hk':
+      case 'zh-ro':
+      case 'zh-tw':
         return MangaCategoryFilter.manhua;
       default:
         return MangaCategoryFilter.manga;
