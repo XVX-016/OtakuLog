@@ -634,7 +634,7 @@ class _MangaReaderPageImageState extends State<MangaReaderPageImage> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.asset.localPath != null) {
+    if (widget.asset.localPath?.isNotEmpty ?? false) {
       return Image.file(
         File(widget.asset.localPath!),
         fit: widget.fit,
