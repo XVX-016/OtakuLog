@@ -22,6 +22,7 @@ class MangaEntity implements TrackableContent {
   @override
   final String? description;
   final bool isAdult;
+  final String? watchOrder;
 
   final DateTime createdAt;
   @override
@@ -48,6 +49,7 @@ class MangaEntity implements TrackableContent {
     required this.createdAt,
     required this.updatedAt,
     this.mangaCategory = MangaCategoryFilter.manga,
+    this.watchOrder,
   });
 
   MangaEntity copyWith({
@@ -63,6 +65,7 @@ class MangaEntity implements TrackableContent {
     DateTime? createdAt,
     DateTime? updatedAt,
     MangaCategoryFilter? mangaCategory,
+    String? watchOrder,
   }) {
     return MangaEntity(
       id: id,
@@ -78,6 +81,7 @@ class MangaEntity implements TrackableContent {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       mangaCategory: mangaCategory ?? this.mangaCategory,
+      watchOrder: watchOrder ?? this.watchOrder,
     );
   }
 }

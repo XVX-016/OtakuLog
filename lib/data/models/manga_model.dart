@@ -25,6 +25,7 @@ class MangaModel {
   late List<String> genres;
   String? description;
   late bool isAdult;
+  String? watchOrder;
 
   late DateTime createdAt;
   late DateTime updatedAt;

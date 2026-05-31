@@ -103,6 +103,7 @@ class MangaMapper {
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
       mangaCategory: model.mangaCategory,
+      watchOrder: model.watchOrder,
     );
   }
 
@@ -120,7 +121,8 @@ class MangaMapper {
       ..description = entity.description
       ..isAdult = entity.isAdult
       ..createdAt = entity.createdAt
-      ..updatedAt = entity.updatedAt;
+      ..updatedAt = entity.updatedAt
+      ..watchOrder = entity.watchOrder;
   }
 
   static MangaStatus _mapStatusFromModel(MangaStatusModel model) {
