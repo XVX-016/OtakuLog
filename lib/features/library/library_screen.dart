@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shimmer/shimmer.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:otakulog/app/providers.dart';
@@ -115,7 +116,7 @@ class LibraryScreen extends ConsumerWidget {
                   ],
                 );
               },
-              loading: () => const Center(child: CircularProgressIndicator()),
+              loading: () => _buildSkeletonList(),
               error: (error, _) => Center(child: Text('Error: $error')),
             ),
           ),
@@ -329,6 +330,73 @@ class LibraryScreen extends ConsumerWidget {
       case LibrarySortOption.rating:
         return 'Highest Rated';
     }
+  }
+
+  Widget _buildSkeletonList() {
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: 5,
+      itemBuilder: (_, __) => _buildSkeletonCard(),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Shimmer.fromColors(
+        baseColor: Colors.grey[850]!,
+        highlightColor: Colors.grey[700]!,
+        child: GTCard(
+          padding: const EdgeInsets.all(14),
+          borderRadius: BorderRadius.circular(18),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Container(
+                width: 86,
+                height: 124,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 16,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(height: 12, width: 120, color: Colors.white),
+                    const SizedBox(height: 10),
+                    Container(
+                      height: 6,
+                      width: double.infinity,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(height: 10),
+                    Container(height: 11, width: 80, color: Colors.white),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              Container(
+                width: 60,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildLibraryCard(
