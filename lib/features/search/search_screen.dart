@@ -331,12 +331,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   void _ensureInitialDiscover(SearchState state) {
-    if (!state.isLoading &&
-        state.results.isEmpty &&
-        state.errorMessage == null &&
-        state.currentPage == 0 &&
-        state.query.trim().isEmpty &&
-        _seededDiscover) {
+    if (state.query.trim().isNotEmpty) {
       _seededDiscover = false;
     }
 
@@ -346,9 +341,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         state.currentPage == 0 &&
         state.query.trim().isEmpty;
 
-    if (!shouldSeed || _seededDiscover) {
-      return;
-    }
+    if (!shouldSeed || _seededDiscover) return;
+
     _seededDiscover = true;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
