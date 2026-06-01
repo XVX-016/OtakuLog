@@ -79,6 +79,7 @@ class PersonalizedRecommendation {
               ? content.status.name
               : (content as MangaEntity).status.name,
           'isAdult': content is MangaEntity ? content.isAdult : item.isAdult,
+          'watchOrder': content is AnimeEntity ? content.watchOrder : (content as MangaEntity).watchOrder,
         },
       },
     };
@@ -109,6 +110,7 @@ class PersonalizedRecommendation {
             isAdult: rawContent['isAdult'] == true,
             createdAt: DateTime.tryParse(rawContent['updatedAt']?.toString() ?? '') ?? DateTime.now(),
             updatedAt: DateTime.tryParse(rawContent['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+            watchOrder: rawContent['watchOrder']?.toString(),
           )
         : AnimeEntity(
             id: rawContent['id'].toString(),
@@ -125,6 +127,7 @@ class PersonalizedRecommendation {
             description: rawContent['description']?.toString(),
             createdAt: DateTime.tryParse(rawContent['updatedAt']?.toString() ?? '') ?? DateTime.now(),
             updatedAt: DateTime.tryParse(rawContent['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+            watchOrder: rawContent['watchOrder']?.toString(),
           );
 
     return PersonalizedRecommendation(

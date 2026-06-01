@@ -143,7 +143,25 @@ class _AnimeDetailBody extends ConsumerWidget {
                   _buildStatusDropdown(context, ref),
                   const SizedBox(height: 16),
                   _buildRatingSelector(context, ref),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
+                  _WatchOrderSection(
+                    title: 'WATCH ORDER / NOTES',
+                    watchOrder: anime.watchOrder ?? '',
+                    onSave: (newNotes) async {
+                      final saved = await ref.read(animeRepositoryProvider).saveAnime(
+                            anime.copyWith(
+                              watchOrder: newNotes,
+                              updatedAt: DateTime.now(),
+                            ),
+                          );
+                      if (saved) {
+                        ref.invalidate(libraryAnimeProvider);
+                        ref.invalidate(combinedLibraryProvider);
+                        ref.invalidate(animeByIdProvider(itemId));
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 24),
                   _buildRemoveButton(context, ref),
                   const SizedBox(height: 32),
                 ],
@@ -447,6 +465,141 @@ class _DetailNotFoundState extends StatelessWidget {
           style: const TextStyle(color: AppTheme.secondaryText),
         ),
       ),
+    );
+  }
+}
+
+class _WatchOrderSection extends StatefulWidget {
+  final String title;
+  final String watchOrder;
+  final ValueChanged<String?> onSave;
+
+  const _WatchOrderSection({
+    required this.title,
+    required this.watchOrder,
+    required this.onSave,
+  });
+
+  @override
+  State<_WatchOrderSection> createState() => _WatchOrderSectionState();
+}
+
+class _WatchOrderSectionState extends State<_WatchOrderSection> {
+  bool _isExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasNotes = widget.watchOrder.trim().isNotEmpty;
+    final text = hasNotes ? widget.watchOrder : 'Add a watch order or personal notes...';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          InkWell(
+            onTap: () {
+              setState(() {
+                _isExpanded = !_isExpanded;
+              });
+            },
+            borderRadius: BorderRadius.circular(12),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  const Icon(Icons.list_alt, color: AppTheme.accent, size: 20),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.title,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1.2,
+                      color: AppTheme.primaryText,
+                    ),
+                  ),
+                  const Spacer(),
+                  Icon(
+                    _isExpanded ? Icons.keyboard_arrow_up : Icons.keyboard_arrow_down,
+                    color: AppTheme.secondaryText,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          if (_isExpanded) ...[
+            const Divider(color: Colors.white10, height: 1),
+            InkWell(
+              onTap: () => _showEditDialog(context),
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16.0),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: hasNotes ? AppTheme.primaryText : AppTheme.secondaryText,
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  void _showEditDialog(BuildContext context) {
+    final controller = TextEditingController(text: widget.watchOrder);
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppTheme.surface,
+          title: Text(
+            widget.title == 'WATCH ORDER / NOTES'
+                ? 'Edit Watch Order / Notes'
+                : 'Edit Reading Order / Notes',
+            style: const TextStyle(color: AppTheme.primaryText),
+          ),
+          content: TextField(
+            controller: controller,
+            maxLines: 5,
+            minLines: 1,
+            autofocus: true,
+            style: const TextStyle(color: AppTheme.primaryText),
+            decoration: const InputDecoration(
+              hintText: 'Enter details...',
+              hintStyle: TextStyle(color: AppTheme.secondaryText),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: AppTheme.accent),
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () {
+                widget.onSave(controller.text.trim());
+                Navigator.pop(dialogContext);
+              },
+              child: const Text(
+                'SAVE',
+                style: TextStyle(color: AppTheme.accent),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

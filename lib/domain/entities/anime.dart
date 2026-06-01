@@ -19,6 +19,7 @@ class AnimeEntity implements TrackableContent {
   final List<String> genres;
   @override
   final String? description;
+  final String? watchOrder;
 
   final DateTime createdAt;
   @override
@@ -41,6 +42,7 @@ class AnimeEntity implements TrackableContent {
     this.description,
     required this.createdAt,
     required this.updatedAt,
+    this.watchOrder,
   });
 
   AnimeEntity copyWith({
@@ -54,6 +56,7 @@ class AnimeEntity implements TrackableContent {
     String? description,
     DateTime? createdAt,
     DateTime? updatedAt,
+    String? watchOrder,
   }) {
     return AnimeEntity(
       id: id,
@@ -67,6 +70,7 @@ class AnimeEntity implements TrackableContent {
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      watchOrder: watchOrder ?? this.watchOrder,
     );
   }
 }

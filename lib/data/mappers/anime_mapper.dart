@@ -53,6 +53,7 @@ class AnimeMapper {
       description: model.description,
       createdAt: model.createdAt,
       updatedAt: model.updatedAt,
+      watchOrder: model.watchOrder,
     );
   }
 
@@ -68,7 +69,8 @@ class AnimeMapper {
       ..genres = entity.genres
       ..description = entity.description
       ..createdAt = entity.createdAt
-      ..updatedAt = entity.updatedAt;
+      ..updatedAt = entity.updatedAt
+      ..watchOrder = entity.watchOrder;
   }
 
   static AnimeStatus _mapStatusFromModel(AnimeStatusModel model) {

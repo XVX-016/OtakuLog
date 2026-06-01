@@ -142,6 +142,7 @@ class BackupMapper {
         'description': item.description,
         'createdAt': item.createdAt.toIso8601String(),
         'updatedAt': item.updatedAt.toIso8601String(),
+        'watchOrder': item.watchOrder,
       };
     }
 
@@ -160,6 +161,7 @@ class BackupMapper {
       'isAdult': manga.isAdult,
       'createdAt': manga.createdAt.toIso8601String(),
       'updatedAt': manga.updatedAt.toIso8601String(),
+      'watchOrder': manga.watchOrder,
     };
   }
 
@@ -180,6 +182,7 @@ class BackupMapper {
         description: json['description']?.toString(),
         createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
         updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+        watchOrder: json['watchOrder']?.toString(),
       );
     }
 
@@ -199,6 +202,7 @@ class BackupMapper {
       isAdult: json['isAdult'] == true,
       createdAt: DateTime.tryParse(json['createdAt']?.toString() ?? '') ?? DateTime.now(),
       updatedAt: DateTime.tryParse(json['updatedAt']?.toString() ?? '') ?? DateTime.now(),
+      watchOrder: json['watchOrder']?.toString(),
     );
   }
 

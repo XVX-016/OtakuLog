@@ -25,6 +25,7 @@ class AnimeModel {
   late List<String> genres;
 
   String? description;
+  String? watchOrder;
   
   late DateTime createdAt;
   
