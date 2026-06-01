@@ -911,7 +911,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   bool _isActiveAnime(AnimeEntity anime) {
-    if (anime.status == AnimeStatus.completed) return false;
+    if (anime.status == AnimeStatus.completed ||
+        anime.status == AnimeStatus.dropped ||
+        anime.status == AnimeStatus.onHold) {
+      return false;
+    }
     if (anime.totalEpisodes > 0) {
       return anime.currentEpisode < anime.totalEpisodes;
     }
@@ -919,7 +923,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen>
   }
 
   bool _isActiveManga(MangaEntity manga) {
-    if (manga.status == MangaStatus.completed) return false;
+    if (manga.status == MangaStatus.completed ||
+        manga.status == MangaStatus.dropped ||
+        manga.status == MangaStatus.onHold) {
+      return false;
+    }
     if (manga.totalChapters > 0) {
       return manga.currentChapter < manga.totalChapters;
     }
