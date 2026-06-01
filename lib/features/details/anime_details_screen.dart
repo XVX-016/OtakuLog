@@ -274,6 +274,10 @@ class _AnimeDetailBody extends ConsumerWidget {
                 },
                 icon: const Icon(Icons.replay),
                 label: const Text('REWATCH'),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
               ),
             ],
           ],

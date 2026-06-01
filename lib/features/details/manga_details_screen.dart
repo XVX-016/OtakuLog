@@ -333,6 +333,10 @@ class _MangaDetailBody extends ConsumerWidget {
                   fit: BoxFit.scaleDown,
                   child: Text('REREAD'),
                 ),
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.redAccent,
+                  side: const BorderSide(color: Colors.redAccent),
+                ),
               ),
             );
 
