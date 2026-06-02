@@ -41,6 +41,10 @@ import 'package:otakulog/features/search/models/search_result_item.dart';
 import 'package:otakulog/features/stats/models/wrapped_summary.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:otakulog/data/repositories/goal_repository_impl.dart';
+import 'package:otakulog/domain/repositories/goal_repository.dart';
+import 'package:otakulog/domain/entities/goal.dart';
+import 'package:otakulog/features/stats/models/goal_progress.dart';
 
 // Services
 final anilistServiceProvider =
@@ -110,6 +114,10 @@ final mangaRepositoryProvider = Provider<MangaRepository>((ref) {
 
 final sessionRepositoryProvider = Provider<SessionRepository>((ref) {
   return SessionRepositoryImpl(IsarService.instance);
+});
+
+final goalRepositoryProvider = Provider<GoalRepository>((ref) {
+  return GoalRepositoryImpl(IsarService.instance);
 });
 
 final trackerRepositoryProvider = Provider<TrackerRepository>((ref) {
@@ -219,6 +227,40 @@ final recentSessionsProvider = FutureProvider<List<UserSessionEntity>>((ref) {
 
 final allSessionsProvider = FutureProvider<List<UserSessionEntity>>((ref) {
   return ref.watch(sessionRepositoryProvider).getAllSessions();
+});
+
+final monthlyGoalProgressProvider =
+    FutureProvider<List<GoalProgress>>((ref) async {
+  final goals =
+      await ref.watch(goalRepositoryProvider).getGoals();
+
+  final sessions =
+      await ref.watch(allSessionsProvider.future);
+
+  final now = DateTime.now();
+
+  final currentMonthSessions = sessions.where((session) {
+    return session.startTime.month == now.month &&
+        session.startTime.year == now.year;
+  }).toList();
+
+  final animeProgress = currentMonthSessions
+      .where((s) => s.contentType == SessionContentType.anime)
+      .fold<int>(0, (sum, s) => sum + s.unitsConsumed);
+
+  final mangaProgress = currentMonthSessions
+      .where((s) => s.contentType == SessionContentType.manga)
+      .fold<int>(0, (sum, s) => sum + s.unitsConsumed);
+
+  return goals.map((goal) {
+    return GoalProgress(
+      goalType: goal.goalType.name,
+      target: goal.targetValue,
+      current: goal.goalType == GoalType.animeEpisodes
+          ? animeProgress
+          : mangaProgress,
+    );
+  }).toList();
 });
 
 final dailyActivityProvider = FutureProvider<Map<DateTime, int>>((ref) async {

@@ -14,6 +14,8 @@ import 'package:otakulog/features/stats/widgets/share/lifetime_stats_card.dart';
 import 'package:otakulog/features/stats/widgets/share/monthly_summary_card.dart';
 import 'package:otakulog/features/stats/widgets/share/share_preview_sheet.dart';
 import 'package:intl/intl.dart';
+import 'package:otakulog/domain/entities/goal.dart';
+
 
 enum StatsShareType { monthly, lifetime }
 
@@ -22,6 +24,7 @@ class StatsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final goalsAsync = ref.watch(monthlyGoalProgressProvider);
     final sessionsAsync = ref.watch(allSessionsProvider);
     final libraryAsync = ref.watch(combinedLibraryProvider);
     final monthlyWrappedAsync = ref.watch(monthlyWrappedProvider);
@@ -31,6 +34,10 @@ class StatsScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('ANALYTICS'),
         actions: [
+          IconButton(
+           onPressed: () => _showGoalDialog(context, ref),
+           icon: const Icon(Icons.flag),
+       ),
           IconButton(
             onPressed: () => _showSharePicker(context, ref),
             icon: const Icon(Icons.ios_share_rounded),
@@ -109,6 +116,60 @@ class StatsScreen extends ConsumerWidget {
                     ),
                   ],
                 ),
+                const SizedBox(height: 24),
+const GTSectionHeader(title: 'Monthly Goals'),
+const SizedBox(height: 8),
+
+goalsAsync.when(
+  data: (goals) {
+    if (goals.isEmpty) {
+      return const StatsEmptyState(
+        icon: Icons.flag_outlined,
+        message: 'No goals set',
+        hint: 'Create a monthly anime or manga goal.',
+      );
+    }
+
+    return Column(
+      children: goals.map((goal) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: GTCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  goal.goalType == 'animeEpisodes'
+                      ? 'Anime Episodes'
+                      : 'Manga Chapters',
+                  style: const TextStyle(
+                    color: AppTheme.primaryText,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                LinearProgressIndicator(
+                  value: goal.percentage.clamp(0.0, 1.0),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '${goal.current} / ${goal.target}',
+                  style: const TextStyle(
+                    color: AppTheme.secondaryText,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  },
+  loading: () => const Center(
+    child: CircularProgressIndicator(),
+  ),
+  error: (e, _) => Text('Error: $e'),
+),
                 const SizedBox(height: 24),
                 const GTSectionHeader(title: 'Weekly Trends'),
                 const SizedBox(height: 8),
@@ -633,4 +694,50 @@ class _StatsLoadingState extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showGoalDialog(BuildContext context, WidgetRef ref) {
+  final controller = TextEditingController();
+
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('Set Goal'),
+      content: TextField(
+        controller: controller,
+        keyboardType: TextInputType.number,
+        decoration: const InputDecoration(
+          labelText: 'Target Value',
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        ElevatedButton(
+  onPressed: () async {
+    final target = int.tryParse(controller.text);
+
+    if (target == null) return;
+
+    final goal = GoalEntity(
+      id: '',
+      goalType: GoalType.animeEpisodes,
+      targetValue: target,
+      month: DateTime.now().month,
+      year: DateTime.now().year,
+    );
+
+    await ref.read(goalRepositoryProvider).saveGoal(goal);
+
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
+  },
+  child: const Text('Save'),
+),
+],
+),
+);
 }
