@@ -83,6 +83,11 @@ const MangaModelSchema = CollectionSchema(
       id: 12,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'watchOrder': PropertySchema(
+      id: 13,
+      name: r'watchOrder',
+      type: IsarType.string,
     )
   },
   estimateSize: _mangaModelEstimateSize,
@@ -126,6 +131,12 @@ int _mangaModelEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.watchOrder;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.genres.length * 3;
   {
     for (var i = 0; i < object.genres.length; i++) {
@@ -157,6 +168,7 @@ void _mangaModelSerialize(
   writer.writeString(offsets[10], object.title);
   writer.writeLong(offsets[11], object.totalChapters);
   writer.writeDateTime(offsets[12], object.updatedAt);
+  writer.writeString(offsets[13], object.watchOrder);
 }
 
 MangaModel _mangaModelDeserialize(
@@ -184,6 +196,7 @@ MangaModel _mangaModelDeserialize(
   object.title = reader.readString(offsets[10]);
   object.totalChapters = reader.readLong(offsets[11]);
   object.updatedAt = reader.readDateTime(offsets[12]);
+  object.watchOrder = reader.readStringOrNull(offsets[13]);
   return object;
 }
 
@@ -223,6 +236,8 @@ P _mangaModelDeserializeProp<P>(
       return (reader.readLong(offset)) as P;
     case 12:
       return (reader.readDateTime(offset)) as P;
+    case 13:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }

@@ -150,6 +150,7 @@ class _MangaDetailBody extends ConsumerWidget {
                   const SizedBox(height: 24),
                   _WatchOrderSection(
                     title: 'READING ORDER / NOTES',
+                    dialogTitle: 'Edit Reading Order / Notes',
                     watchOrder: manga.watchOrder ?? '',
                     onSave: (newNotes) async {
                       final saved = await ref.read(mangaRepositoryProvider).saveManga(
@@ -1020,11 +1021,13 @@ class _DetailNotFoundState extends StatelessWidget {
 
 class _WatchOrderSection extends StatefulWidget {
   final String title;
+  final String dialogTitle;
   final String watchOrder;
   final ValueChanged<String?> onSave;
 
   const _WatchOrderSection({
     required this.title,
+    required this.dialogTitle,
     required this.watchOrder,
     required this.onSave,
   });
@@ -1112,9 +1115,7 @@ class _WatchOrderSectionState extends State<_WatchOrderSection> {
         return AlertDialog(
           backgroundColor: AppTheme.surface,
           title: Text(
-            widget.title == 'WATCH ORDER / NOTES'
-                ? 'Edit Watch Order / Notes'
-                : 'Edit Reading Order / Notes',
+            widget.dialogTitle,
             style: const TextStyle(color: AppTheme.primaryText),
           ),
           content: TextField(

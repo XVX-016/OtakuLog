@@ -72,6 +72,11 @@ const AnimeModelSchema = CollectionSchema(
       id: 10,
       name: r'updatedAt',
       type: IsarType.dateTime,
+    ),
+    r'watchOrder': PropertySchema(
+      id: 11,
+      name: r'watchOrder',
+      type: IsarType.string,
     )
   },
   estimateSize: _animeModelEstimateSize,
@@ -115,6 +120,12 @@ int _animeModelEstimateSize(
       bytesCount += 3 + value.length * 3;
     }
   }
+  {
+    final value = object.watchOrder;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.genres.length * 3;
   {
     for (var i = 0; i < object.genres.length; i++) {
@@ -144,6 +155,7 @@ void _animeModelSerialize(
   writer.writeString(offsets[8], object.title);
   writer.writeLong(offsets[9], object.totalEpisodes);
   writer.writeDateTime(offsets[10], object.updatedAt);
+  writer.writeString(offsets[11], object.watchOrder);
 }
 
 AnimeModel _animeModelDeserialize(
@@ -167,6 +179,7 @@ AnimeModel _animeModelDeserialize(
   object.title = reader.readString(offsets[8]);
   object.totalEpisodes = reader.readLong(offsets[9]);
   object.updatedAt = reader.readDateTime(offsets[10]);
+  object.watchOrder = reader.readStringOrNull(offsets[11]);
   return object;
 }
 
@@ -200,6 +213,8 @@ P _animeModelDeserializeProp<P>(
       return (reader.readLong(offset)) as P;
     case 10:
       return (reader.readDateTime(offset)) as P;
+    case 11:
+      return (reader.readStringOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
   }
