@@ -36,7 +36,7 @@ void main() {
     );
 
     final verification = verify(() => dio.post('', data: captureAny(named: 'data')));
-    final payload = verification.captured.single as Map<String, dynamic>;
+    final payload = verification.captured.first as Map<String, dynamic>;
     final variables = payload['variables'] as Map<String, dynamic>;
     expect(variables['search'], 'bleach');
     expect(variables['isAdult'], isFalse);
@@ -63,7 +63,7 @@ void main() {
     );
 
     final verification = verify(() => dio.post('', data: captureAny(named: 'data')));
-    final payload = verification.captured.single as Map<String, dynamic>;
+    final payload = verification.captured.first as Map<String, dynamic>;
     final variables = payload['variables'] as Map<String, dynamic>;
     expect(variables['tagIn'], isA<List<String>>());
     expect(variables.containsKey('isAdult'), isFalse);
@@ -86,7 +86,7 @@ void main() {
     );
 
     final verification = verify(() => dio.get('/manga', queryParameters: captureAny(named: 'queryParameters')));
-    final params = verification.captured.single as Map<String, dynamic>;
+    final params = verification.captured.first as Map<String, dynamic>;
     expect(params['contentRating[]'], ['safe', 'suggestive']);
     expect(params['excludedTags[]'], isA<List<String>>());
     expect(params['offset'], 50);
@@ -108,7 +108,7 @@ void main() {
     );
 
     final verification = verify(() => dio.get('/manga', queryParameters: captureAny(named: 'queryParameters')));
-    final params = verification.captured.single as Map<String, dynamic>;
+    final params = verification.captured.first as Map<String, dynamic>;
     expect(params['contentRating[]'], ['erotica', 'pornographic']);
     expect(params['includedTags[]'], isA<List<String>>());
   });

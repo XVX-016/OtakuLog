@@ -64,6 +64,7 @@ void main() {
           currentChapter: 5,
           status: MangaStatus.reading,
           genres: [],
+          isAdult: false,
           createdAt: now,
           updatedAt: now,
         ),

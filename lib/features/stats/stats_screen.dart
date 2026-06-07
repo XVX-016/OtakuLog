@@ -326,8 +326,9 @@ class StatsScreen extends ConsumerWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= sortedDates.length)
+                    if (value.toInt() >= sortedDates.length) {
                       return const SizedBox.shrink();
+                    }
                     final date = sortedDates[value.toInt()];
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -569,8 +570,9 @@ class StatsScreen extends ConsumerWidget {
           session.contentId, (value) => value + session.unitsConsumed,
           ifAbsent: () => session.unitsConsumed);
     }
-    if (unitsById.isEmpty)
+    if (unitsById.isEmpty) {
       return type == SessionContentType.anime ? 'No anime yet' : 'No manga yet';
+    }
 
     final topId = unitsById.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
