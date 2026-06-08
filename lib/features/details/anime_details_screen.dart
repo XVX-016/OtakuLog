@@ -345,17 +345,13 @@ class _AnimeDetailBody extends ConsumerWidget {
           }).toList(),
           onChanged: (newStatus) async {
             if (newStatus != null) {
-              final saved = await ref.read(animeRepositoryProvider).saveAnime(
-                    anime.copyWith(
-                      status: newStatus,
-                      updatedAt: DateTime.now(),
-                    ),
-                  );
-              if (saved) {
-                ref.invalidate(libraryAnimeProvider);
-                ref.invalidate(combinedLibraryProvider);
-                ref.invalidate(animeByIdProvider(itemId));
+              final result = await ref
+                  .read(trackerNotifierProvider.notifier)
+                  .updateAnimeStatus(anime, newStatus);
+              if (context.mounted) {
+                await showTrackerFeedback(context, ref, result);
               }
+              ref.invalidate(animeByIdProvider(itemId));
             }
           },
         ),

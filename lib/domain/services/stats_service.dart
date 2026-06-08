@@ -32,15 +32,16 @@ class StatsService {
     if (sessions.isEmpty) return 0;
 
     final dates = sessions
-        .map((s) =>
-            DateTime(s.startTime.year, s.startTime.month, s.startTime.day))
+        .map((s) => DateTime.utc(
+            s.startTime.year, s.startTime.month, s.startTime.day))
         .toSet()
         .toList()
       ..sort((a, b) => b.compareTo(a));
 
     int streak = 0;
     var current = DateTime.now();
-    current = DateTime(current.year, current.month, current.day);
+    current =
+        DateTime.utc(current.year, current.month, current.day);
 
     for (final date in dates) {
       if (date == current ||
@@ -104,8 +105,8 @@ class StatsService {
     if (sessions.isEmpty) return 0;
 
     final dates = sessions
-        .map((s) =>
-            DateTime(s.startTime.year, s.startTime.month, s.startTime.day))
+        .map((s) => DateTime.utc(
+            s.startTime.year, s.startTime.month, s.startTime.day))
         .toSet()
         .toList()
       ..sort((a, b) => a.compareTo(b));

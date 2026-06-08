@@ -20,6 +20,7 @@ import 'package:otakulog/domain/entities/manga.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
 import 'package:otakulog/domain/entities/user.dart';
 import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/entities/achievement.dart';
 import 'package:otakulog/domain/repositories/anime_repository.dart';
 import 'package:otakulog/domain/repositories/manga_repository.dart';
 import 'package:otakulog/domain/repositories/search_repository.dart';
@@ -28,6 +29,7 @@ import 'package:otakulog/domain/repositories/tracker_repository.dart';
 import 'package:otakulog/domain/repositories/user_repository.dart';
 import 'package:otakulog/domain/services/recommendation_service.dart';
 import 'package:otakulog/domain/services/stats_service.dart';
+import 'package:otakulog/domain/services/achievement_service.dart';
 import 'package:otakulog/core/config/cloud_config.dart';
 import 'package:otakulog/core/config/cloud_runtime.dart';
 import 'package:otakulog/core/services/reminder_service.dart';
@@ -53,6 +55,14 @@ final mangadexServiceProvider =
 final nhentaiServiceProvider =
     Provider<NhentaiService>((ref) => NhentaiService());
 final statsServiceProvider = Provider<StatsService>((ref) => StatsService());
+final achievementServiceProvider = Provider<AchievementService>((ref) {
+  return AchievementService(IsarService.instance);
+});
+
+final unlockedAchievementsProvider = FutureProvider<List<AchievementEntity>>((ref) async {
+  final service = ref.watch(achievementServiceProvider);
+  return service.getUnlockedAchievements();
+});
 final recommendationServiceProvider =
     Provider<RecommendationService>((ref) => RecommendationService());
 final retentionPreferencesServiceProvider =

@@ -14,6 +14,19 @@ class LaunchGateScreen extends ConsumerWidget {
     return Scaffold(
       body: userAsync.when(
         data: (user) {
+          if (user != null) {
+            Future.microtask(() async {
+              try {
+                final library = await ref.read(combinedLibraryProvider.future);
+                final sessions = await ref.read(allSessionsProvider.future);
+                await ref.read(achievementServiceProvider).performRetroactiveUnlock(
+                  library: library,
+                  sessions: sessions,
+                );
+                ref.invalidate(unlockedAchievementsProvider);
+              } catch (_) {}
+            });
+          }
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!context.mounted) return;
             context.go(user == null ? '/onboarding' : '/');

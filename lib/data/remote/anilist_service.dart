@@ -185,8 +185,14 @@ class AnilistService {
   ) {
     final includedGenres = filters.includedTags.where(_genreTags.contains).toList();
     final excludedGenres = filters.excludedTags.where(_genreTags.contains).toList();
-    final includedTags = _buildAniListTags(filters.includedTags);
-    final excludedTags = _buildAniListTags(filters.excludedTags);
+    final includedTags = _buildAniListTags({
+      ...filters.includedTags,
+      if (filters.adultMode == AdultMode.explicitOnly) ..._adultTags,
+    });
+    final excludedTags = _buildAniListTags({
+      ...filters.excludedTags,
+      if (filters.adultMode == AdultMode.off) ..._adultTags,
+    });
 
     return <String, dynamic>{
       'page': page,
@@ -199,7 +205,6 @@ class AnilistService {
       if (includedTags.isNotEmpty) 'tagIn': includedTags,
       if (excludedTags.isNotEmpty) 'tagNotIn': excludedTags,
       if (filters.adultMode == AdultMode.off) 'isAdult': false,
-      if (filters.adultMode == AdultMode.explicitOnly) 'isAdult': true,
     };
   }
 

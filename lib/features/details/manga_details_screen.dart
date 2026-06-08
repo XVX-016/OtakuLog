@@ -461,17 +461,13 @@ class _MangaDetailBody extends ConsumerWidget {
           }).toList(),
           onChanged: (newStatus) async {
             if (newStatus != null) {
-              final saved = await ref.read(mangaRepositoryProvider).saveManga(
-                    manga.copyWith(
-                      status: newStatus,
-                      updatedAt: DateTime.now(),
-                    ),
-                  );
-              if (saved) {
-                ref.invalidate(libraryMangaProvider);
-                ref.invalidate(combinedLibraryProvider);
-                ref.invalidate(mangaByIdProvider(itemId));
+              final result = await ref
+                  .read(trackerNotifierProvider.notifier)
+                  .updateMangaStatus(manga, newStatus);
+              if (context.mounted) {
+                await showTrackerFeedback(context, ref, result);
               }
+              ref.invalidate(mangaByIdProvider(itemId));
             }
           },
         ),

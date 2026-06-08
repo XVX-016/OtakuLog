@@ -6,6 +6,7 @@ import 'package:otakulog/domain/entities/manga.dart';
 import 'package:otakulog/domain/entities/trackable_content.dart';
 import 'package:otakulog/domain/entities/user.dart';
 import 'package:otakulog/domain/entities/user_session.dart';
+import 'package:otakulog/domain/entities/achievement.dart';
 
 class TrackerState {
   final Set<String> busyContentIds;
@@ -139,9 +140,13 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
       }
 
       _invalidateAfterMutation(isAnime: true);
+      final unlocked = await _evaluateAndGetNewlyUnlocked();
 
       return TrackerActionResult(
-        message: delta == 1 ? 'Logged +1 episode' : 'Logged +$delta episodes',
+        message: _appendAchievements(
+          delta == 1 ? 'Logged +1 episode' : 'Logged +$delta episodes',
+          unlocked,
+        ),
         undoneMessage: 'Undid anime log',
         undoAction: TrackerUndoAction(
           sessionId: sessionId,
@@ -224,9 +229,13 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
       }
 
       _invalidateAfterMutation(isAnime: false);
+      final unlocked = await _evaluateAndGetNewlyUnlocked();
 
       return TrackerActionResult(
-        message: delta == 1 ? 'Logged +1 chapter' : 'Logged +$delta chapters',
+        message: _appendAchievements(
+          delta == 1 ? 'Logged +1 chapter' : 'Logged +$delta chapters',
+          unlocked,
+        ),
         undoneMessage: 'Undid manga log',
         undoAction: TrackerUndoAction(
           sessionId: sessionId,
@@ -389,8 +398,9 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
         throw Exception('Failed to update anime');
       }
       _invalidateAfterMutation(isAnime: true);
+      final unlocked = await _evaluateAndGetNewlyUnlocked();
       return TrackerActionResult(
-        message: message,
+        message: _appendAchievements(message, unlocked),
         undoneMessage: 'Update saved',
       );
     } finally {
@@ -409,8 +419,9 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
         throw Exception('Failed to update manga');
       }
       _invalidateAfterMutation(isAnime: false);
+      final unlocked = await _evaluateAndGetNewlyUnlocked();
       return TrackerActionResult(
-        message: message,
+        message: _appendAchievements(message, unlocked),
         undoneMessage: 'Update saved',
       );
     } finally {
@@ -470,6 +481,58 @@ class TrackerNotifier extends StateNotifier<TrackerState> {
   void _finishBusy(String contentId) {
     final nextBusy = {...state.busyContentIds}..remove(contentId);
     state = state.copyWith(busyContentIds: nextBusy);
+  }
+
+  Future<TrackerActionResult?> updateAnimeStatus(
+    AnimeEntity anime,
+    AnimeStatus status,
+  ) async {
+    final updatedAnime = anime.copyWith(
+      status: status,
+      updatedAt: DateTime.now(),
+    );
+    return _updateAnime(
+      updatedAnime,
+      message: 'Updated status to ${status.name}',
+    );
+  }
+
+  Future<TrackerActionResult?> updateMangaStatus(
+    MangaEntity manga,
+    MangaStatus status,
+  ) async {
+    final updatedManga = manga.copyWith(
+      status: status,
+      updatedAt: DateTime.now(),
+    );
+    return _updateManga(
+      updatedManga,
+      message: 'Updated status to ${status.name}',
+    );
+  }
+
+  Future<List<AchievementDefinition>> _evaluateAndGetNewlyUnlocked() async {
+    try {
+      final library = await ref.read(combinedLibraryProvider.future);
+      final sessions = await ref.read(allSessionsProvider.future);
+      final newlyUnlocked = await ref.read(achievementServiceProvider).evaluateAchievements(
+        library: library,
+        sessions: sessions,
+      );
+      if (newlyUnlocked.isNotEmpty) {
+        ref.invalidate(unlockedAchievementsProvider);
+        return newlyUnlocked.map((a) {
+          return achievementDefinitions.firstWhere((d) => d.id == a.id);
+        }).toList();
+      }
+    } catch (_) {}
+    return const [];
+  }
+
+  String _appendAchievements(String message, List<AchievementDefinition> unlocked) {
+    if (unlocked.isEmpty) return message;
+    final suffix = unlocked.map((a) => '🏆 Achievement Unlocked: ${a.title}!').join('\n');
+    return '$message\n$suffix';
   }
 }
 

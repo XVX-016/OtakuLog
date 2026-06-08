@@ -17,6 +17,7 @@ import 'package:intl/intl.dart';
 import 'package:otakulog/domain/entities/anime.dart';
 import 'package:otakulog/domain/entities/manga.dart';
 
+import 'package:otakulog/domain/entities/achievement.dart';
 enum StatsShareType { monthly, lifetime }
 
 class StatsScreen extends ConsumerWidget {
@@ -151,6 +152,10 @@ class StatsScreen extends ConsumerWidget {
                   context,
                   monthlyWrappedAsync.valueOrNull,
                 ),
+                const SizedBox(height: 24),
+                const GTSectionHeader(title: 'Achievements'),
+                const SizedBox(height: 8),
+                _buildAchievementsSection(context, ref, libraryItems, sessions),
                 const SizedBox(height: 24),
                 GTCard(
                   child: Row(
@@ -321,8 +326,9 @@ class StatsScreen extends ConsumerWidget {
                 sideTitles: SideTitles(
                   showTitles: true,
                   getTitlesWidget: (value, meta) {
-                    if (value.toInt() >= sortedDates.length)
+                    if (value.toInt() >= sortedDates.length) {
                       return const SizedBox.shrink();
+                    }
                     final date = sortedDates[value.toInt()];
                     return Padding(
                       padding: const EdgeInsets.only(top: 8),
@@ -564,8 +570,9 @@ class StatsScreen extends ConsumerWidget {
           session.contentId, (value) => value + session.unitsConsumed,
           ifAbsent: () => session.unitsConsumed);
     }
-    if (unitsById.isEmpty)
+    if (unitsById.isEmpty) {
       return type == SessionContentType.anime ? 'No anime yet' : 'No manga yet';
+    }
 
     final topId = unitsById.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
@@ -580,6 +587,150 @@ class StatsScreen extends ConsumerWidget {
   String _mostActiveDayLabel(DateTime? day) {
     if (day == null) return 'No active day yet';
     return DateFormat('MMM d').format(day);
+  }
+
+  Widget _buildAchievementsSection(
+    BuildContext context,
+    WidgetRef ref,
+    List<TrackableContent> library,
+    List<UserSessionEntity> sessions,
+  ) {
+    final unlockedAsync = ref.watch(unlockedAchievementsProvider);
+    final achievementService = ref.watch(achievementServiceProvider);
+
+    return unlockedAsync.when(
+      data: (unlockedList) {
+        final unlockedMap = {for (final a in unlockedList) a.id: a};
+
+        return GridView.builder(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 12,
+            crossAxisSpacing: 12,
+            childAspectRatio: 1.1,
+          ),
+          itemCount: achievementDefinitions.length,
+          itemBuilder: (context, index) {
+            final def = achievementDefinitions[index];
+            final unlocked = unlockedMap[def.id];
+            final isUnlocked = unlocked != null;
+            final progress = achievementService.calculateProgress(def, library, sessions);
+            final percent = (progress / def.threshold).clamp(0.0, 1.0);
+
+            return Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppTheme.surface,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isUnlocked
+                      ? AppTheme.accent.withOpacity(0.3)
+                      : Colors.white.withOpacity(0.05),
+                  width: isUnlocked ? 1.5 : 1.0,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Icon(
+                        isUnlocked ? Icons.emoji_events : Icons.emoji_events_outlined,
+                        color: isUnlocked ? AppTheme.accent : AppTheme.secondaryText,
+                        size: 24,
+                      ),
+                      if (isUnlocked)
+                        const Text(
+                          'UNLOCKED',
+                          style: TextStyle(
+                            color: AppTheme.accent,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    def.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: AppTheme.primaryText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Expanded(
+                    child: Text(
+                      def.description,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: AppTheme.secondaryText,
+                        fontSize: 11,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (isUnlocked)
+                    Text(
+                      'Earned: ${DateFormat('MMM d, yyyy').format(unlocked.unlockedAt)}',
+                      style: const TextStyle(
+                        color: AppTheme.secondaryText,
+                        fontSize: 10,
+                      ),
+                    )
+                  else ...[
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(4),
+                            child: LinearProgressIndicator(
+                              value: percent,
+                              minHeight: 4,
+                              backgroundColor: AppTheme.elevated,
+                              color: AppTheme.accent,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          '$progress/${def.threshold}',
+                          style: const TextStyle(
+                            color: AppTheme.secondaryText,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: CircularProgressIndicator(color: AppTheme.accent),
+        ),
+      ),
+      error: (error, _) => Center(
+        child: Text(
+          'Error loading achievements: $error',
+          style: const TextStyle(color: AppTheme.secondaryText),
+        ),
+      ),
+    );
   }
 }
 
