@@ -751,8 +751,16 @@ class LibraryScreen extends ConsumerWidget {
   }
 
   bool _isInProgress(TrackableContent item) {
-    if (item is AnimeEntity) return item.status != AnimeStatus.completed;
-    if (item is MangaEntity) return item.status != MangaStatus.completed;
+    if (item is AnimeEntity) {
+      return item.status != AnimeStatus.completed &&
+          item.status != AnimeStatus.dropped &&
+          item.status != AnimeStatus.onHold;
+    }
+    if (item is MangaEntity) {
+      return item.status != MangaStatus.completed &&
+          item.status != MangaStatus.dropped &&
+          item.status != MangaStatus.onHold;
+    }
     return false;
   }
 }
