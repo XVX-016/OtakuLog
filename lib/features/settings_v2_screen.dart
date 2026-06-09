@@ -19,6 +19,7 @@ import 'package:otakulog/features/downloads/downloads_manager_screen.dart';
 import 'package:otakulog/core/services/local_backup_service.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:otakulog/core/config/cloud_runtime.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -55,10 +56,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _isWebdavSyncing = false;
   bool? _webdavConnectionSuccess;
 
+  bool _isGoogleDriveSyncing = false;
+  String? _googleDriveEmail;
+  bool _googleDriveLoadingEmail = false;
+
   @override
   void initState() {
     super.initState();
     _loadSecureCredentials();
+    _loadGoogleDriveStatus();
   }
 
   Future<void> _loadSecureCredentials() async {
@@ -75,6 +81,23 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         });
       }
     } catch (_) {}
+  }
+
+  Future<void> _loadGoogleDriveStatus() async {
+    if (!CloudRuntime.isGoogleDriveConfigured) return;
+    setState(() => _googleDriveLoadingEmail = true);
+    try {
+      final email = await ref.read(googleDriveServiceProvider).getUserEmail();
+      if (mounted) {
+        setState(() {
+          _googleDriveEmail = email;
+        });
+      }
+    } catch (_) {} finally {
+      if (mounted) {
+        setState(() => _googleDriveLoadingEmail = false);
+      }
+    }
   }
 
   @override
@@ -210,6 +233,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               _localBackupRestoreCard(),
               const SizedBox(height: 20),
               _webdavSyncCard(prefsAsync.valueOrNull),
+              if (CloudRuntime.isGoogleDriveConfigured) ...[
+                const SizedBox(height: 20),
+                _googleDriveSyncCard(prefsAsync.valueOrNull),
+              ],
               const SizedBox(height: 24),
               _label('About'),
               const SizedBox(height: 10),
@@ -470,6 +497,335 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
+  }
+
+  Widget _googleDriveSyncCard(RetentionPreferences? prefs) {
+    final lastSynced = prefs?.googleDriveLastSynced;
+    final lastError = prefs?.googleDriveLastError;
+    final isSignedIn = _googleDriveEmail != null;
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Icon(Icons.add_to_drive_outlined, color: AppTheme.accent),
+              SizedBox(width: 8),
+              Text(
+                'Google Drive Sync',
+                style: TextStyle(
+                  color: AppTheme.primaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'Keep your database synchronized using your private Google Drive AppData folder. This storage is secure and inaccessible to other apps.',
+            style: TextStyle(color: AppTheme.secondaryText, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          if (_googleDriveLoadingEmail) ...[
+            const Center(
+              child: SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppTheme.accent),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else if (!isSignedIn) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _signInGoogle,
+                icon: const Icon(Icons.login_rounded),
+                label: const Text('SIGN IN WITH GOOGLE'),
+              ),
+            ),
+            const SizedBox(height: 16),
+          ] else ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Connected Account',
+                        style: TextStyle(color: AppTheme.secondaryText, fontSize: 12),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _googleDriveEmail!,
+                        style: const TextStyle(color: AppTheme.primaryText, fontWeight: FontWeight.w500, fontSize: 14),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _signOutGoogle,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.redAccent,
+                    side: const BorderSide(color: Colors.redAccent),
+                  ),
+                  icon: const Icon(Icons.logout_rounded, size: 16),
+                  label: const Text('SIGN OUT', style: TextStyle(fontSize: 12)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (lastSynced != null) ...[
+            Text(
+              'Last synced: ${DateFormat('MMM d, yyyy - h:mm a').format(lastSynced)}',
+              style: const TextStyle(color: AppTheme.secondaryText, fontSize: 13),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (lastError != null && lastError.trim().isNotEmpty) ...[
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0xFFB71C1C).withOpacity(0.12),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.35)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.error_outline_rounded, color: Colors.redAccent, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Sync failed: $lastError',
+                      style: const TextStyle(color: Colors.redAccent, fontSize: 12, height: 1.3),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+          if (isSignedIn) ...[
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: _isGoogleDriveSyncing ? null : _showGoogleDriveSyncConfirmDialog,
+                icon: _isGoogleDriveSyncing
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.cloud_sync_outlined),
+                label: Text(_isGoogleDriveSyncing ? 'SYNCING...' : 'SYNC NOW'),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Future<void> _signInGoogle() async {
+    setState(() => _googleDriveLoadingEmail = true);
+    try {
+      final service = ref.read(googleDriveServiceProvider);
+      final account = await service.signIn();
+      if (account != null) {
+        setState(() {
+          _googleDriveEmail = account.email;
+        });
+        _showMessage('Successfully signed in with Google!');
+        ref.invalidate(retentionPreferencesProvider);
+      }
+    } catch (e) {
+      _showErrorDialog('Sign In Failed', e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) {
+        setState(() => _googleDriveLoadingEmail = false);
+      }
+    }
+  }
+
+  Future<void> _signOutGoogle() async {
+    setState(() => _googleDriveLoadingEmail = true);
+    try {
+      final service = ref.read(googleDriveServiceProvider);
+      await service.signOut();
+      setState(() {
+        _googleDriveEmail = null;
+      });
+      _showMessage('Signed out of Google account.');
+      ref.invalidate(retentionPreferencesProvider);
+    } catch (e) {
+      _showErrorDialog('Sign Out Failed', e.toString().replaceAll('Exception: ', ''));
+    } finally {
+      if (mounted) {
+        setState(() => _googleDriveLoadingEmail = false);
+      }
+    }
+  }
+
+  Future<void> _showGoogleDriveSyncConfirmDialog() async {
+    final isSignedIn = await ref.read(googleDriveServiceProvider).isSignedIn();
+    if (!isSignedIn) {
+      _showErrorDialog('Not Signed In', 'Please sign in to your Google account before syncing.');
+      return;
+    }
+
+    if (!mounted) return;
+
+    RestoreMode selectedMode = RestoreMode.merge;
+
+    showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          title: const Row(
+            children: [
+              Icon(Icons.cloud_sync_outlined, color: AppTheme.accent),
+              SizedBox(width: 8),
+              Text(
+                'Google Drive Sync Options',
+                style: TextStyle(color: AppTheme.primaryText, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Choose how remote cloud data should be integrated during sync down:',
+                style: TextStyle(color: AppTheme.secondaryText, fontSize: 13, height: 1.4),
+              ),
+              const SizedBox(height: 16),
+              RadioListTile<RestoreMode>(
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accent,
+                value: RestoreMode.merge,
+                groupValue: selectedMode,
+                title: const Text('Merge remote backup (Recommended)',
+                    style: TextStyle(color: AppTheme.primaryText, fontSize: 14)),
+                subtitle: const Text('Intelligently blends cloud backup logs with local watch history.',
+                    style: TextStyle(color: AppTheme.secondaryText, fontSize: 12)),
+                onChanged: (value) => setDialogState(() => selectedMode = value!),
+              ),
+              RadioListTile<RestoreMode>(
+                contentPadding: EdgeInsets.zero,
+                activeColor: AppTheme.accent,
+                value: RestoreMode.replaceLocal,
+                groupValue: selectedMode,
+                title: const Text('Replace local data entirely',
+                    style: TextStyle(color: Colors.redAccent, fontSize: 14)),
+                subtitle: const Text('Deletes current device library and forces overwrite with remote backup.',
+                    style: TextStyle(color: AppTheme.secondaryText, fontSize: 12)),
+                onChanged: (value) => setDialogState(() => selectedMode = value!),
+              ),
+              if (selectedMode == RestoreMode.replaceLocal) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFB71C1C).withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: const Color(0xFFB71C1C).withOpacity(0.3)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 20),
+                      SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Warning: This overrides local database entries. Be absolutely sure!',
+                          style: TextStyle(color: Colors.redAccent, fontSize: 11, height: 1.3),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text('CANCEL', style: TextStyle(color: AppTheme.secondaryText)),
+            ),
+            ElevatedButton(
+              style: selectedMode == RestoreMode.replaceLocal
+                  ? ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB71C1C))
+                  : null,
+              onPressed: () => Navigator.pop(dialogContext, true),
+              child: const Text('SYNC NOW'),
+            ),
+          ],
+        ),
+      ),
+    ).then((confirmed) {
+      if (confirmed == true) {
+        _executeGoogleDriveSync(selectedMode);
+      }
+    });
+  }
+
+  Future<void> _executeGoogleDriveSync(RestoreMode mode) async {
+    setState(() => _isGoogleDriveSyncing = true);
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppTheme.accent),
+      ),
+    );
+
+    try {
+      await ref.read(googleDriveServiceProvider).syncNow(mode: mode);
+
+      if (mounted) {
+        Navigator.pop(context); // close loader dialog
+        _showMessage('Google Drive sync complete!');
+
+        ref.invalidate(currentUserProvider);
+        ref.invalidate(combinedLibraryProvider);
+        ref.invalidate(libraryAnimeProvider);
+        ref.invalidate(libraryMangaProvider);
+        ref.invalidate(allSessionsProvider);
+        ref.invalidate(recentSessionsProvider);
+        ref.invalidate(activityTimelineProvider);
+        ref.invalidate(dailyActivityProvider);
+        ref.invalidate(monthlyActivityProvider);
+        ref.invalidate(earliestActivityDateProvider);
+        ref.invalidate(retentionPreferencesProvider);
+      }
+    } catch (e) {
+      if (mounted) {
+        Navigator.pop(context); // close loader dialog
+        _showErrorDialog('Sync Failed', e.toString().replaceAll('Exception: ', ''));
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isGoogleDriveSyncing = false);
+      }
+    }
   }
 
   Widget _webdavSyncCard(RetentionPreferences? prefs) {

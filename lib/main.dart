@@ -25,6 +25,11 @@ void main() async {
     CloudRuntime.isConfigured = true;
   }
 
+  final googleDriveClientId = dotenv.maybeGet('GOOGLE_CLIENT_ID') ?? '';
+  if (googleDriveClientId.isNotEmpty) {
+    CloudRuntime.isGoogleDriveConfigured = true;
+  }
+
   await IsarService.init();
   await ReminderService().initialize();
   

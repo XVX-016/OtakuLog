@@ -22,6 +22,10 @@ class RetentionPreferences {
   final String? webdavLastSyncedAtIso;
   final String? webdavLastError;
 
+  // Google Drive preferences (status/non-sensitive only)
+  final String? googleDriveLastSyncedAtIso;
+  final String? googleDriveLastError;
+
   const RetentionPreferences({
     this.notificationsEnabled = true,
     this.lastAppOpenedAtIso,
@@ -38,6 +42,8 @@ class RetentionPreferences {
     this.cachedRecommendations = const [],
     this.webdavLastSyncedAtIso,
     this.webdavLastError,
+    this.googleDriveLastSyncedAtIso,
+    this.googleDriveLastError,
   });
 
   DateTime? get lastAppOpenedAt =>
@@ -52,6 +58,8 @@ class RetentionPreferences {
       lastBackupAtIso == null ? null : DateTime.tryParse(lastBackupAtIso!);
   DateTime? get webdavLastSyncedAt =>
       webdavLastSyncedAtIso == null ? null : DateTime.tryParse(webdavLastSyncedAtIso!);
+  DateTime? get googleDriveLastSynced =>
+      googleDriveLastSyncedAtIso == null ? null : DateTime.tryParse(googleDriveLastSyncedAtIso!);
 
   RetentionPreferences copyWith({
     bool? notificationsEnabled,
@@ -69,6 +77,8 @@ class RetentionPreferences {
     List<Map<String, dynamic>>? cachedRecommendations,
     String? webdavLastSyncedAtIso,
     String? webdavLastError,
+    String? googleDriveLastSyncedAtIso,
+    String? googleDriveLastError,
   }) {
     return RetentionPreferences(
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
@@ -95,6 +105,8 @@ class RetentionPreferences {
       cachedRecommendations: cachedRecommendations ?? this.cachedRecommendations,
       webdavLastSyncedAtIso: webdavLastSyncedAtIso ?? this.webdavLastSyncedAtIso,
       webdavLastError: webdavLastError ?? this.webdavLastError,
+      googleDriveLastSyncedAtIso: googleDriveLastSyncedAtIso ?? this.googleDriveLastSyncedAtIso,
+      googleDriveLastError: googleDriveLastError ?? this.googleDriveLastError,
     );
   }
 
@@ -115,6 +127,8 @@ class RetentionPreferences {
       'cachedRecommendations': cachedRecommendations,
       'webdavLastSyncedAtIso': webdavLastSyncedAtIso,
       'webdavLastError': webdavLastError,
+      'googleDriveLastSyncedAtIso': googleDriveLastSyncedAtIso,
+      'googleDriveLastError': googleDriveLastError,
     };
   }
 
@@ -141,6 +155,8 @@ class RetentionPreferences {
       }).toList(),
       webdavLastSyncedAtIso: json['webdavLastSyncedAtIso']?.toString(),
       webdavLastError: json['webdavLastError']?.toString(),
+      googleDriveLastSyncedAtIso: json['googleDriveLastSyncedAtIso']?.toString(),
+      googleDriveLastError: json['googleDriveLastError']?.toString(),
     );
   }
 }
