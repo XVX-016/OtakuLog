@@ -165,12 +165,12 @@ class ScaffoldWithBottomNavBar extends StatelessWidget {
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.search),
-            activeIcon: Icon(Icons.search),
+            activeIcon: Icon(Icons.manage_search),
             label: 'Search',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.bar_chart),
-            activeIcon: Icon(Icons.bar_chart),
+            activeIcon: Icon(Icons.bar_chart_rounded),
             label: 'Stats',
           ),
         ],
