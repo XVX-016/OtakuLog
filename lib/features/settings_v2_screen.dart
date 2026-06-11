@@ -882,6 +882,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           TextField(
             controller: _webdavPasswordController,
             obscureText: true,
+            enableSuggestions: false,
+            autocorrect: false,
             style: const TextStyle(color: AppTheme.primaryText),
             decoration: _decoration('Enter app password or token'),
           ),
