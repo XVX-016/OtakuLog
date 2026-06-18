@@ -65,8 +65,7 @@ class SearchFilters {
       medium: medium,
       adultMode: AdultMode.off,
       sort: SearchSort.trending,
-      mangaCategory:
-          medium == SearchMedium.manga ? MangaCategoryFilter.any : MangaCategoryFilter.any,
+      mangaCategory: MangaCategoryFilter.any,
     );
   }
 
