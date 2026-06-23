@@ -141,24 +141,6 @@ class MangadexService {
     if (seasonStripped.isNotEmpty && seasonStripped != full) {
       yield seasonStripped;
     }
-
-    final subtitleStripped = rawTitle
-        .replaceAll(RegExp(r'[-|].*$'), '')
-        .trim();
-    if (subtitleStripped.isNotEmpty && subtitleStripped != full) {
-      yield subtitleStripped;
-    }
-
-    final normalizedWords = _normalizeTitle(full)
-        .split(' ')
-        .where((word) => word.length > 2)
-        .toList();
-    if (normalizedWords.length >= 2) {
-      yield '${normalizedWords[0]} ${normalizedWords[1]}';
-    }
-    if (normalizedWords.isNotEmpty) {
-      yield normalizedWords.first;
-    }
   }
 
   Future<String?> _resolveByRawTitleSearch(
